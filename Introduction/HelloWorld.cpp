@@ -12,8 +12,6 @@ int main(int argc, char* argv[]) {
 
     uint32_t threads_num = atoi(argv[1]);
 
-    std::cout << threads_num << std::endl;
-
     // set the number of threads
     omp_set_num_threads(threads_num);
     // start the parallel section
@@ -29,6 +27,13 @@ int main(int argc, char* argv[]) {
         std::cout << "Hello, world! Thread number [" << thread_num << "]" << std::endl;
         // barrier synchronisation
         #pragma omp barrier 
+
+        // We also can use #pragma omp critical, but it this case
+        // the sequanse of threads is unindentified
+        // #pragma omp critical
+        // {
+        //     std::cout << "Hello, world! Thread number [" << thread_num << "]" << std::endl;
+        // }
     }
 
     return 0;
