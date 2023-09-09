@@ -2,33 +2,40 @@
 
 #include <iostream>
 #include <omp.h>
-// #include <unistd.h>
+
+// global variabl for the synchronisation
+omp_lock_t my_lock;
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         fprintf(stderr, "[-] Usage %s n -- the number of threads\n", argv[0]);
         return -1;
     }
+    // initialise variabl for the synchronisation
+    omp_init_lock(&my_lock);
 
-    uint32_t threads_num = atoi(argv[1]);
-    uint32_t num = 0; // shared var 
+    uint32_t size = atoi(argv[1]);
+    uint32_t rank = 0;
+    uint32_t flag = 0; // shared var
 
     // set the number of threads
-    omp_set_num_threads(threads_num);
+    omp_set_num_threads(size);
 
-    #pragma omp parallel shared(num)
+    #pragma omp parallel private(rank) shared(flag)
     {
-        uint32_t thread_num = omp_get_thread_num();
-        
-        // The first option is to use critical
-        // But there is one disadvantage: the sequanse of threads that will be 
-        // execute this part of code is unindentified.
-        #pragma omp critical
-        {
-            std::cout << "Thread number [" << thread_num << "] num value is [" << num << "]" << std::endl;
-            num++;
-        }
+        rank = omp_get_thread_num();
+        // this feature made to make threads work with shared variable one by one
+        while (rank > flag) {}
+
+        // Lock execution for other threads
+        omp_set_lock(&my_lock);
+        printf("Thread id is [%d], flag = %d\n", rank, flag);
+        flag++;
+        omp_unset_lock(&my_lock);
+
+        #pragma omp barrier 
     }
 
+    omp_destroy_lock(&my_lock);
     return 0;
 }

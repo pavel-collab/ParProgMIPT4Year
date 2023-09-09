@@ -3,14 +3,7 @@
 #include <iostream>
 #include <omp.h>
 #include <math.h>
-
-double Sum(int start, int end) {
-    double res = 0;
-    for (double i = start; i <= end; ++i) {
-        res += 1/i;
-    }
-    return res;
-}
+#include <cstring>
 
 int main(int argc, char* argv[]) {
     if (argc < 3) {
@@ -18,47 +11,82 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    uint32_t threads_num = atoi(argv[1]); 
+    uint32_t size = atoi(argv[1]); 
     int N = atoi(argv[2]);
 
     // Check if each thread will have data for calculation
-    if (int(floor(N/2)) < threads_num) {
+    if (int(floor(N/2)) < size) {
         perror("[-] Every process have to sum at least two numbers.\nSo, total number of processes must be at least 2 times less then N.\n");
         return -1;
     }
 
     double result = 0;
     // set the number of threads
-    omp_set_num_threads(threads_num);
+    omp_set_num_threads(size);
 
-    #pragma omp parallel shared(result)
-    {
-        int rank = omp_get_thread_num();
+    /*
+    There are 3 different types of balancing work between threads.
+    You can set the type of balancing by the comand line parametr.
+    The default type, that used, if you didn't set any type by yourself is static.
+    */
+    if ((argc == 4 && !strcmp(argv[3], "static")) || argc == 3) {
+        #pragma omp parallel reduction(+: result)
+        {        
+            /*
+            With static type each thread will take equal amount of iterations.
+            That means, for example, if there are 1000 iterations in cycle, the first
+            thread will execute iterations from 1 to 250, the second from 251 to 500 etc.
+            */
+            double local_res = 0; // this variable need to view what part of harmonic row this proces has sum
+            
+            #pragma omp for schedule(static)
+            for (int i = 1; i <= N; ++i) {
+                local_res += 1/static_cast<double>(i);
+                result += 1/static_cast<double>(i);
+            }
 
-        int n_range = N / threads_num;
-        int mod_size = N % threads_num;
-
-        double rank_res = 0;
-
-        int rank_start, rank_end = 0;
-
-        if (rank < mod_size) {
-            rank_start = rank*(n_range + 1) + 1;
-            rank_end = rank_start + n_range;
+            int rank = omp_get_thread_num();
+            printf("Thread [%d]. Rank res is %lf\n", rank, local_res);
         }
-        else {
-            rank_start = rank*n_range + 1 + mod_size;
-            rank_end = rank_start + n_range - 1;
-        }
+    } else if (argc == 4 && !strcmp(argv[3], "dynamic")) {
+        #pragma omp parallel reduction(+: result)
+        {        
+            /*
+            Each thread takes a package of iterations fixed size. When some thread
+            finish it's chunk of the work, it will take next package.
+            */
+            double local_res = 0; // this variable need to view what part of harmonic row this proces has sum
+            
+            #pragma omp for schedule(dynamic)
+            for (int i = 1; i <= N; ++i) {
+                local_res += 1/static_cast<double>(i);
+                result += 1/static_cast<double>(i);
+            }
 
-        rank_res = Sum(rank_start, rank_end);
-        printf("Thread [%d] sum space [%d, %d]. Rank res is %lf\n", rank, rank_start, rank_end, rank_res);
-
-        // For this moment this section is a garanty of threads synchronisation
-        #pragma omp critical
-        {
-            result += rank_res;
+            int rank = omp_get_thread_num();
+            printf("Thread [%d]. Rank res is %lf\n", rank, local_res);
         }
+    } else if (argc == 4 && !strcmp(argv[3], "guided")) {
+        #pragma omp parallel reduction(+: result)
+        {        
+            /*
+            This type of balancing works the same with type "dynamic", but the size of
+            data package could change depends of unexecuted iteraions.
+            */
+            double local_res = 0; // this variable need to view what part of harmonic row this proces has sum
+            
+            #pragma omp for schedule(guided)
+            for (int i = 1; i <= N; ++i) {
+                local_res += 1/static_cast<double>(i);
+                result += 1/static_cast<double>(i);
+            }
+
+            int rank = omp_get_thread_num();
+            printf("Thread [%d]. Rank res is %lf\n", rank, local_res);
+        }
+    } else {
+        fprintf(stderr, "[-] Unexpected type of synchronisation %s\n", argv[3]);
+        return -1;
     }
 
     std::cout << "Result is " << result << std::endl;
