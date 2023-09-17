@@ -13,6 +13,7 @@
 //TODO: make a macros for validaiton
 //TODO: make an experiment to compare different types of schedule
 //TODO: improve plots
+//TODO: make Shtrassen algorithm implementation
 
 int GetIdx(int i, int j, int N) {
     return i*N + j;
@@ -164,6 +165,8 @@ void ParallelCacheFriendlyMatrixMultiplication(const std::vector<int> &matrix1,
         }
     }
 }
+
+
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {

@@ -22,7 +22,8 @@ def CleanFile(file_path):
     fd.close()
 
 def main():
-    matrix_scales = list(range(1, 101))
+    # matrix_scales = list(range(1, 101))
+    matrix_scales = list(range(1000, 1020))
 
     simple_matrix_multiplication_time = []
     cache_friendly_matrix_multiplication_time = []
@@ -39,15 +40,15 @@ def main():
     cache_friendly_matrix_multiplication_time = ImportDataTimeFileContent("./time.dat")
     CleanFile("./time.dat")
 
-    for scale in matrix_scales:
-        subprocess.run(["../parallel_simple_matrix_multiplication", f'{scale}'])
-    parallel_simple_matrix_multiplication_time = ImportDataTimeFileContent("./time.dat")
-    CleanFile("./time.dat")
+    # for scale in matrix_scales:
+    #     subprocess.run(["../parallel_simple_matrix_multiplication", f'{scale}'])
+    # parallel_simple_matrix_multiplication_time = ImportDataTimeFileContent("./time.dat")
+    # CleanFile("./time.dat")
 
-    for scale in matrix_scales:
-        subprocess.run(["../parallel_cache_friendly_matrix_multiplication", f'{scale}'])
-    parallel_cache_friendly_matrix_multiplication_time = ImportDataTimeFileContent("./time.dat")
-    CleanFile("./time.dat")
+    # for scale in matrix_scales:
+    #     subprocess.run(["../parallel_cache_friendly_matrix_multiplication", f'{scale}'])
+    # parallel_cache_friendly_matrix_multiplication_time = ImportDataTimeFileContent("./time.dat")
+    # CleanFile("./time.dat")
 
     date = datetime.strftime(datetime.now(), "%d.%m.%Y-%H.%M.%S")
     save_file_name = r"../images/" + date + r".jpg"
@@ -60,11 +61,11 @@ def main():
     plt.scatter(np.array(matrix_scales), np.array(cache_friendly_matrix_multiplication_time))
     plt.plot(np.array(matrix_scales), np.array(cache_friendly_matrix_multiplication_time), label='cache_friendly_matrix_multiplication')
 
-    plt.scatter(np.array(matrix_scales), np.array(parallel_simple_matrix_multiplication_time))
-    plt.plot(np.array(matrix_scales), np.array(parallel_simple_matrix_multiplication_time), label='parallel_simple_matrix_multiplication')
+    # plt.scatter(np.array(matrix_scales), np.array(parallel_simple_matrix_multiplication_time))
+    # plt.plot(np.array(matrix_scales), np.array(parallel_simple_matrix_multiplication_time), label='parallel_simple_matrix_multiplication')
 
-    plt.scatter(np.array(matrix_scales), np.array(parallel_cache_friendly_matrix_multiplication_time))
-    plt.plot(np.array(matrix_scales), np.array(parallel_cache_friendly_matrix_multiplication_time), label='parallel_cache_friendly_matrix_multiplication')
+    # plt.scatter(np.array(matrix_scales), np.array(parallel_cache_friendly_matrix_multiplication_time))
+    # plt.plot(np.array(matrix_scales), np.array(parallel_cache_friendly_matrix_multiplication_time), label='parallel_cache_friendly_matrix_multiplication')
 
     plt.legend()
     plt.grid()
