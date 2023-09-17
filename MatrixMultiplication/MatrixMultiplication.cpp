@@ -166,8 +166,6 @@ void ParallelCacheFriendlyMatrixMultiplication(const std::vector<int> &matrix1,
     }
 }
 
-
-
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         fprintf(stderr, "[-] Error, Expected more arguments. Use %s *matrix_size*\n", argv[0]);
