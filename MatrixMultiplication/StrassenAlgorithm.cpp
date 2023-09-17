@@ -12,6 +12,20 @@ int GetIdx(int i, int j, int N) {
     return i*N + j;
 }
 
+void PutData2File(const char* data_file_name, std::vector<int>* u, int M, int K) {
+    FILE* fd = fopen(data_file_name, "a");
+    if (fd) {
+        for (int m = 0; m < M; ++m) {
+            for (int k = 0; k < K; ++k) {
+                int idx = GetIdx(m, k, M);
+                fprintf(fd, "%d ", (*u)[idx]);
+            }
+            fprintf(fd, "\n");
+        }
+        fclose(fd);
+    }
+}
+
 void GenRandomVector(std::vector<int>* vec) {
     // First create an instance of an engine.
     std::random_device rnd_device;
@@ -153,28 +167,41 @@ std::vector<int> Strassen(std::vector<int> A, std::vector<int> B) {
 }
 
 int main(int argc, char* argv[]) {
-    int N = 2;
+    if (argc < 2) {
+        fprintf(stderr, "[-] Error, Expected more arguments. Use %s *matrix_size*\n", argv[0]);
+        return -1;
+    }
+    int N = atoi(argv[1]);
 
-    // std::vector<int> vec1(N*N);
-    // std::vector<int> vec2(N*N);
+    bool isPowerOfTwo = N && !(N & (N - 1));
+    if (!isPowerOfTwo) {
+        fprintf(stderr, "[-] Error. *matrix_size* must be power of 2, but %d is not\n", N);
+        return -1;
+    }
 
-    // GenRandomVector(&vec1);
-    // GenRandomVector(&vec2);
+    const char* matrix1_file_name = "matrix1.dat";
+    const char* matrix2_file_name = "matrix2.dat";
+    const char* multiplication_result_file_name = "multiplication_result.dat";
+    const char* file_name = "time.dat";
 
-    // PrintMatrix(vec1, N);
-    // printf("\n");
-    // PrintMatrix(vec2, N);
-    // printf("\n");
+    std::vector<int> vec1(N*N);
+    std::vector<int> vec2(N*N);
 
-    // auto res = Strassen(vec1, vec2);
-    // PrintMatrix(res, N);    
+    GenRandomVector(&vec1);
+    GenRandomVector(&vec2);
 
-    std::vector<int> A = {4, 5, 7, 10};
-    std::vector<int> B = {5, 4, 1, 6};
+    // PutData2File(matrix1_file_name, &vec1, N, N);
+    // PutData2File(matrix2_file_name, &vec2, N, N);
 
-    auto res = Strassen(A, B);
+    auto t_start = std::chrono::high_resolution_clock::now();
+    auto res = Strassen(vec1, vec2);
+    auto t_end = std::chrono::high_resolution_clock::now();
+    std::cout << "strassen " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
+    FILE* fd = fopen(file_name, "a");
+    fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
+    fclose(fd);
 
-    PrintMatrix(res, N);
+    // PutData2File(multiplication_result_file_name, &res, N, N);
 
     return 0;
 }

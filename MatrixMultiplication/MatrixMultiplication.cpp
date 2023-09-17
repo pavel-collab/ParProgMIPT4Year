@@ -192,7 +192,7 @@ int main(int argc, char* argv[]) {
     auto t_start = std::chrono::high_resolution_clock::now();
     SimpleMatrixMulriplication(vec1, vec2, &result);
     auto t_end = std::chrono::high_resolution_clock::now();
-    std::cout << "consistent " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
+    std::cout << "simple_matrix_multiplication " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
     FILE* fd = fopen(file_name, "a");
     fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
     fclose(fd);
@@ -202,7 +202,7 @@ int main(int argc, char* argv[]) {
     auto t_start = std::chrono::high_resolution_clock::now();
     CacheFriendlyMatrixMultiplication(vec1, vec2, &result);
     auto t_end = std::chrono::high_resolution_clock::now();
-    std::cout << "consistent " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
+    std::cout << "cache_friendly_matrix_multiplication " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
     FILE* fd = fopen(file_name, "a");
     fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
     fclose(fd);
@@ -212,7 +212,7 @@ int main(int argc, char* argv[]) {
     auto t_start = std::chrono::high_resolution_clock::now();
     ParallelSimpleMatrixMultiplication(vec1, vec2, &result);
     auto t_end = std::chrono::high_resolution_clock::now();
-    std::cout << "consistent " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
+    std::cout << "parallel_simple_matrix_multiplication " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
     FILE* fd = fopen(file_name, "a");
     fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
     fclose(fd);
@@ -222,7 +222,7 @@ int main(int argc, char* argv[]) {
     auto t_start = std::chrono::high_resolution_clock::now();
     ParallelCacheFriendlyMatrixMultiplication(vec1, vec2, &result);
     auto t_end = std::chrono::high_resolution_clock::now();
-    std::cout << "consistent " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
+    std::cout << "parallel_cache_friendly_matrix_multiplication " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
     FILE* fd = fopen(file_name, "a");
     fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
     fclose(fd);
