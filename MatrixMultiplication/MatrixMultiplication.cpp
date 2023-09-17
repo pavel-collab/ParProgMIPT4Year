@@ -13,7 +13,6 @@
 //TODO: make a macros for validaiton
 //TODO: make an experiment to compare different types of schedule
 //TODO: improve plots
-//TODO: make Shtrassen algorithm implementation
 
 int GetIdx(int i, int j, int N) {
     return i*N + j;
@@ -134,6 +133,7 @@ void ParallelSimpleMatrixMultiplication(const std::vector<int> &matrix1,
     std::fill(result->begin(), result->end(), 0.0);
     omp_set_num_threads(4);
 
+    #if SCHEDULE == 0
     #pragma omp parallel for schedule(static) shared(matrix1, matrix2, result)
     for (size_t i = 0; i < N; ++i) {
         // printf("[DEBUG] Thread %d\n", omp_get_thread_num());
@@ -143,6 +143,31 @@ void ParallelSimpleMatrixMultiplication(const std::vector<int> &matrix1,
             }
         }
     }
+    #endif
+
+    #if SCHEDULE == 1
+    #pragma omp parallel for schedule(dynamic) shared(matrix1, matrix2, result)
+    for (size_t i = 0; i < N; ++i) {
+        // printf("[DEBUG] Thread %d\n", omp_get_thread_num());
+        for (size_t j = 0; j < N; ++j) {
+            for (size_t k = 0; k < N; ++k) { 
+                (*result)[GetIdx(i, j, N)] += matrix1[GetIdx(i, k, N)] * matrix2[GetIdx(k, j, N)];
+            }
+        }
+    }
+    #endif
+
+    #if SCHEDULE == 2
+    #pragma omp parallel for schedule(guided) shared(matrix1, matrix2, result)
+    for (size_t i = 0; i < N; ++i) {
+        // printf("[DEBUG] Thread %d\n", omp_get_thread_num());
+        for (size_t j = 0; j < N; ++j) {
+            for (size_t k = 0; k < N; ++k) { 
+                (*result)[GetIdx(i, j, N)] += matrix1[GetIdx(i, k, N)] * matrix2[GetIdx(k, j, N)];
+            }
+        }
+    }
+    #endif
 }
 
 void ParallelCacheFriendlyMatrixMultiplication(const std::vector<int> &matrix1, 
@@ -185,8 +210,10 @@ int main(int argc, char* argv[]) {
     GenRandomVector(&vec1);
     GenRandomVector(&vec2);
 
-    // PutData2File(matrix1_file_name, &vec1, N, N);
-    // PutData2File(matrix2_file_name, &vec2, N, N);
+    #if VALIDTION
+    PutData2File(matrix1_file_name, &vec1, N, N);
+    PutData2File(matrix2_file_name, &vec2, N, N);
+    #endif
 
     #if ALGORITHM == 0
     auto t_start = std::chrono::high_resolution_clock::now();
@@ -228,6 +255,8 @@ int main(int argc, char* argv[]) {
     fclose(fd);
     #endif
 
-    // PutData2File(multiplication_result_file_name, &result, N, N);
+    #if VALIDTION
+    PutData2File(multiplication_result_file_name, &result, N, N);
+    #endif
     return 0;
 }

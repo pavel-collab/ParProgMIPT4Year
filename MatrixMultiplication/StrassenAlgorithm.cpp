@@ -77,8 +77,14 @@ std::vector<int> Strassen(std::vector<int> A, std::vector<int> B) {
     int N = static_cast<int>(sqrt(A.size()));
     int n = N / 2;
 
-    if (N == 1) {
-        std::vector<int> C = {A[0] * B[0]};
+    //* Here we can variate min limit of matris scale
+    // if (N == 1) {
+    //     std::vector<int> C = {A[0] * B[0]};
+    //     return C;
+    // }
+    if (N <= 4) {
+        std::vector<int> C(N*N);
+        CacheFriendlyMatrixMultiplication(A, B, &C);
         return C;
     }
 
@@ -190,8 +196,10 @@ int main(int argc, char* argv[]) {
     GenRandomVector(&vec1);
     GenRandomVector(&vec2);
 
-    // PutData2File(matrix1_file_name, &vec1, N, N);
-    // PutData2File(matrix2_file_name, &vec2, N, N);
+    #if VALIDTION
+    PutData2File(matrix1_file_name, &vec1, N, N);
+    PutData2File(matrix2_file_name, &vec2, N, N);
+    #endif
 
     auto t_start = std::chrono::high_resolution_clock::now();
     auto res = Strassen(vec1, vec2);
@@ -201,7 +209,9 @@ int main(int argc, char* argv[]) {
     fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
     fclose(fd);
 
-    // PutData2File(multiplication_result_file_name, &res, N, N);
+    #if VALIDTION
+    PutData2File(multiplication_result_file_name, &res, N, N);
+    #endif
 
     return 0;
 }

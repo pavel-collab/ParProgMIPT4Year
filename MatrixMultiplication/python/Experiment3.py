@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import subprocess
 from datetime import datetime
-import pandas as pd
+import argparse
 
 def ImportDataTimeFileContent(file_name: str) -> list:
     res_list = []
@@ -22,24 +22,24 @@ def CleanFile(file_path):
     fd.close()
 
 def main():
-    # matrix_scales = list(range(1, 101))
-    matrix_scales = list(range(1000, 1020))
-
-    parallel_simple_matrix_multiplication_time_static = []
+    matrix_scales = [2**j for j in range(10)]
+    simple_matrix_multiplication_time = []
+    cache_friendly_matrix_multiplication_time = []
+    strassen_time = []
 
     for scale in matrix_scales:
-        subprocess.run(["../parallel_simple_matrix_multiplication_static", f'{scale}'])
+        subprocess.run(["../simple_matrix_multiplication", f'{scale}'])
     simple_matrix_multiplication_time = ImportDataTimeFileContent("./time.dat")
     CleanFile("./time.dat")
 
     for scale in matrix_scales:
-        subprocess.run(["../parallel_simple_matrix_multiplication_dynamic", f'{scale}'])
+        subprocess.run(["../cache_friendly_matrix_multiplication", f'{scale}'])
     cache_friendly_matrix_multiplication_time = ImportDataTimeFileContent("./time.dat")
     CleanFile("./time.dat")
 
     for scale in matrix_scales:
-        subprocess.run(["../parallel_simple_matrix_multiplication_guided", f'{scale}'])
-    parallel_simple_matrix_multiplication_time = ImportDataTimeFileContent("./time.dat")
+        subprocess.run(["../strassen", f'{scale}'])
+    strassen_time = ImportDataTimeFileContent("./time.dat")
     CleanFile("./time.dat")
 
     date = datetime.strftime(datetime.now(), "%d.%m.%Y-%H.%M.%S")
@@ -48,17 +48,17 @@ def main():
     fig = plt.figure()
 
     plt.scatter(np.array(matrix_scales), np.array(simple_matrix_multiplication_time), s=10)
-    plt.plot(np.array(matrix_scales), np.array(simple_matrix_multiplication_time), label='stitic')
+    plt.plot(np.array(matrix_scales), np.array(simple_matrix_multiplication_time), label='simple_matrix_multiplication')
 
     plt.scatter(np.array(matrix_scales), np.array(cache_friendly_matrix_multiplication_time), s=10)
-    plt.plot(np.array(matrix_scales), np.array(cache_friendly_matrix_multiplication_time), label='dynamic')
+    plt.plot(np.array(matrix_scales), np.array(cache_friendly_matrix_multiplication_time), label='cache_friendly_matrix_multiplication')
 
-    plt.scatter(np.array(matrix_scales), np.array(parallel_simple_matrix_multiplication_time), s=10)
-    plt.plot(np.array(matrix_scales), np.array(parallel_simple_matrix_multiplication_time), label='guided')
+    plt.scatter(np.array(matrix_scales), np.array(strassen_time), s=10)
+    plt.plot(np.array(matrix_scales), np.array(strassen_time), label='strassen')
+
     plt.legend()
     plt.grid()
     fig.savefig(save_file_name)
-       
 
 if __name__ == '__main__':
     main()
