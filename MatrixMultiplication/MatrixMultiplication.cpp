@@ -6,8 +6,13 @@
 #include <cassert>
 #include <cmath>
 #include <omp.h>
+#include <chrono>
 
 //TODO: replace int matrix to template T matrix to be able to use float or double multiplication
+//TODO: make macroses for various types of schedule
+//TODO: make a macros for validaiton
+//TODO: make an experiment to compare different types of schedule
+//TODO: improve plots
 
 int GetIdx(int i, int j, int N) {
     return i*N + j;
@@ -126,10 +131,11 @@ void ParallelSimpleMatrixMultiplication(const std::vector<int> &matrix1,
 
     int N = static_cast<int>(sqrt(matrix1.size()));
     std::fill(result->begin(), result->end(), 0.0);
+    omp_set_num_threads(4);
 
     #pragma omp parallel for schedule(static) shared(matrix1, matrix2, result)
     for (size_t i = 0; i < N; ++i) {
-        printf("[DEBUG] Thread %d\n", omp_get_thread_num());
+        // printf("[DEBUG] Thread %d\n", omp_get_thread_num());
         for (size_t j = 0; j < N; ++j) {
             for (size_t k = 0; k < N; ++k) { 
                 (*result)[GetIdx(i, j, N)] += matrix1[GetIdx(i, k, N)] * matrix2[GetIdx(k, j, N)];
@@ -146,10 +152,11 @@ void ParallelCacheFriendlyMatrixMultiplication(const std::vector<int> &matrix1,
 
     int N = static_cast<int>(sqrt(matrix1.size()));
     std::fill(result->begin(), result->end(), 0.0);
+    omp_set_num_threads(4);
 
     #pragma omp parallel for schedule(static) shared(matrix1, matrix2, result)
     for (size_t i = 0; i < N; ++i) {
-        printf("[DEBUG] Thread %d\n", omp_get_thread_num());
+        // printf("[DEBUG] Thread %d\n", omp_get_thread_num());
         for (size_t k = 0; k < N; ++k) {
             for (size_t j = 0; j < N; ++j) { 
                 (*result)[GetIdx(i, j, N)] += matrix1[GetIdx(i, k, N)] * matrix2[GetIdx(k, j, N)];
@@ -167,8 +174,8 @@ int main(int argc, char* argv[]) {
 
     const char* matrix1_file_name = "matrix1.dat";
     const char* matrix2_file_name = "matrix2.dat";
-
     const char* multiplication_result_file_name = "multiplication_result.dat";
+    const char* file_name = "time.dat";
 
     std::vector<int> vec1(N*N);
     std::vector<int> vec2(N*N);
@@ -177,12 +184,49 @@ int main(int argc, char* argv[]) {
     GenRandomVector(&vec1);
     GenRandomVector(&vec2);
 
-    PutData2File(matrix1_file_name, &vec1, N, N);
-    PutData2File(matrix2_file_name, &vec2, N, N);
+    // PutData2File(matrix1_file_name, &vec1, N, N);
+    // PutData2File(matrix2_file_name, &vec2, N, N);
 
+    #if ALGORITHM == 0
+    auto t_start = std::chrono::high_resolution_clock::now();
     SimpleMatrixMulriplication(vec1, vec2, &result);
-    // CacheFriendlyMatrixMultiplication(vec1, vec2, &result);
-    
-    PutData2File(multiplication_result_file_name, &result, N, N);
+    auto t_end = std::chrono::high_resolution_clock::now();
+    std::cout << "consistent " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
+    FILE* fd = fopen(file_name, "a");
+    fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
+    fclose(fd);
+    #endif
+
+    #if ALGORITHM == 1
+    auto t_start = std::chrono::high_resolution_clock::now();
+    CacheFriendlyMatrixMultiplication(vec1, vec2, &result);
+    auto t_end = std::chrono::high_resolution_clock::now();
+    std::cout << "consistent " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
+    FILE* fd = fopen(file_name, "a");
+    fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
+    fclose(fd);
+    #endif
+
+    #if ALGORITHM == 2
+    auto t_start = std::chrono::high_resolution_clock::now();
+    ParallelSimpleMatrixMultiplication(vec1, vec2, &result);
+    auto t_end = std::chrono::high_resolution_clock::now();
+    std::cout << "consistent " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
+    FILE* fd = fopen(file_name, "a");
+    fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
+    fclose(fd);
+    #endif
+
+    #if ALGORITHM == 3
+    auto t_start = std::chrono::high_resolution_clock::now();
+    ParallelCacheFriendlyMatrixMultiplication(vec1, vec2, &result);
+    auto t_end = std::chrono::high_resolution_clock::now();
+    std::cout << "consistent " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
+    FILE* fd = fopen(file_name, "a");
+    fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
+    fclose(fd);
+    #endif
+
+    // PutData2File(multiplication_result_file_name, &result, N, N);
     return 0;
 }
