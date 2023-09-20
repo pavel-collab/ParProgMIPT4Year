@@ -2,17 +2,19 @@
 #include <algorithm>
 #include <iterator>
 #include <iostream>
-#include <vector>
+#include <valarray>
 #include <cassert>
 #include <cmath>
 #include <omp.h>
 #include <chrono>
 
+#include <valarray>
+
 int GetIdx(int i, int j, int N) {
     return i*N + j;
 }
 
-void PutData2File(const char* data_file_name, std::vector<int>* u, int M, int K) {
+void PutData2File(const char* data_file_name, std::valarray<int>* u, int M, int K) {
     FILE* fd = fopen(data_file_name, "a");
     if (fd) {
         for (int m = 0; m < M; ++m) {
@@ -26,7 +28,7 @@ void PutData2File(const char* data_file_name, std::vector<int>* u, int M, int K)
     }
 }
 
-void GenRandomVector(std::vector<int>* vec) {
+void GenRandomvalarray(std::valarray<int>* vec) {
     // First create an instance of an engine.
     std::random_device rnd_device;
     // Specify the engine and distribution.
@@ -41,7 +43,7 @@ void GenRandomVector(std::vector<int>* vec) {
     std::generate(begin(*vec), end(*vec), gen);
 }
 
-void PrintMatrix(const std::vector<int> &matrix, size_t matrix_size) {
+void PrintMatrix(const std::valarray<int> &matrix, size_t matrix_size) {
     auto sz = sqrt(matrix.size());
     assert(sz - matrix_size < 1e-6);
 
@@ -53,15 +55,15 @@ void PrintMatrix(const std::vector<int> &matrix, size_t matrix_size) {
     }
 }
 
-//TODO: look through implementation from the YouTube, think about using std::valarray instead of std::vector and reduce the number of tmp vectors
-void CacheFriendlyMatrixMultiplication(const std::vector<int> &matrix1, 
-                                       const std::vector<int> &matrix2,
-                                       std::vector<int>* result) {
+//TODO: look through implementation from the YouTube, think about using std::valarray instead of std::valarray and reduce the number of tmp valarrays
+void CacheFriendlyMatrixMultiplication(const std::valarray<int> &matrix1, 
+                                       const std::valarray<int> &matrix2,
+                                       std::valarray<int>* result) {
     assert(sqrt(matrix1.size()) - sqrt(matrix2.size()) < 1e-6);
     assert(sqrt(matrix1.size()) - sqrt(result->size()) < 1e-6);
 
     int N = static_cast<int>(sqrt(matrix1.size()));
-    std::fill(result->begin(), result->end(), 0.0);
+    std::fill(std::begin(*result), std::end(*result), 0.0);
 
     for (size_t i = 0; i < N; ++i) {
         for (size_t k = 0; k < N; ++k) {
@@ -73,67 +75,77 @@ void CacheFriendlyMatrixMultiplication(const std::vector<int> &matrix1,
 }
 
 // Guess, that marix scale is divided by 2 in any recursion step
-std::vector<int> Strassen(std::vector<int> A, std::vector<int> B) {
+std::valarray<int> Strassen(std::valarray<int> A, std::valarray<int> B) {
     assert(sqrt(A.size()) - sqrt(B.size()) < 1e-6);
     int N = static_cast<int>(sqrt(A.size()));
     int n = N / 2;
 
     //* Here we can variate min limit of matris scale
     // if (N == 1) {
-    //     std::vector<int> C = {A[0] * B[0]};
+    //     std::valarray<int> C = {A[0] * B[0]};
     //     return C;
     // }
     if (N <= 4) {
-        std::vector<int> C(N*N);
+        std::valarray<int> C(N*N);
         CacheFriendlyMatrixMultiplication(A, B, &C);
         return C;
     }
 
-    std::vector<int> a11;
-    std::vector<int> a12;
-    std::vector<int> a21;
-    std::vector<int> a22;
+    std::valarray<int> a11(n*n);
+    std::valarray<int> a12(n*n);
+    std::valarray<int> a21(n*n);
+    std::valarray<int> a22(n*n);
 
-    std::vector<int> b11;
-    std::vector<int> b12;
-    std::vector<int> b21;
-    std::vector<int> b22;
+    std::valarray<int> b11(n*n);
+    std::valarray<int> b12(n*n);
+    std::valarray<int> b21(n*n);
+    std::valarray<int> b22(n*n);
 
     for (size_t i = 0; i < n; ++i) {
         for (size_t j = 0; j < n; ++j) {
-            a11.emplace_back(A[GetIdx(i, j, N)]);
-            a12.emplace_back(A[GetIdx(i, j+n, N)]);
-            a21.emplace_back(A[GetIdx(i+n, j, N)]);
-            a22.emplace_back(A[GetIdx(i+n, j+n, N)]);
+            a11[GetIdx(i, j, n)] = A[GetIdx(i, j, N)];
+            a12[GetIdx(i, j, n)] = A[GetIdx(i, j+n, N)];
+            a21[GetIdx(i, j, n)] = A[GetIdx(i+n, j, N)];
+            a22[GetIdx(i, j, n)] = A[GetIdx(i+n, j+n, N)];
 
-            b11.emplace_back(B[GetIdx(i, j, N)]);
-            b12.emplace_back(B[GetIdx(i, j+n, N)]);
-            b21.emplace_back(B[GetIdx(i+n, j, N)]);
-            b22.emplace_back(B[GetIdx(i+n, j+n, N)]);
+            b11[GetIdx(i, j, n)] = B[GetIdx(i, j, N)];
+            b12[GetIdx(i, j, n)] = B[GetIdx(i, j+n, N)];
+            b21[GetIdx(i, j, n)] = B[GetIdx(i+n, j, N)];
+            b22[GetIdx(i, j, n)] = B[GetIdx(i+n, j+n, N)];
         }
     }
 
-    std::vector<int> s1(n*n);
-    std::vector<int> s2(n*n);
-    std::vector<int> s3(n*n);
-    std::vector<int> s4(n*n);
-    std::vector<int> s5(n*n);
-    std::vector<int> s6(n*n);
-    std::vector<int> s7(n*n);
-    std::vector<int> s8(n*n);
-    std::vector<int> s9(n*n);
-    std::vector<int> s10(n*n);
+    std::valarray<int> s1(n*n);
+    std::valarray<int> s2(n*n);
+    std::valarray<int> s3(n*n);
+    std::valarray<int> s4(n*n);
+    std::valarray<int> s5(n*n);
+    std::valarray<int> s6(n*n);
+    std::valarray<int> s7(n*n);
+    std::valarray<int> s8(n*n);
+    std::valarray<int> s9(n*n);
+    std::valarray<int> s10(n*n);
 
-    std::transform (b12.begin(), b12.end(), b22.begin(), s1.begin(), std::minus<int>());
-    std::transform (a11.begin(), a11.end(), a12.begin(), s2.begin(), std::plus<int>());
-    std::transform (a21.begin(), a21.end(), a22.begin(), s3.begin(), std::plus<int>());
-    std::transform (b21.begin(), b21.end(), b11.begin(), s4.begin(), std::minus<int>());
-    std::transform (a11.begin(), a11.end(), a22.begin(), s5.begin(), std::plus<int>());
-    std::transform (b11.begin(), b11.end(), b22.begin(), s6.begin(), std::plus<int>());
-    std::transform (a12.begin(), a12.end(), a22.begin(), s7.begin(), std::minus<int>());
-    std::transform (b21.begin(), b21.end(), b22.begin(), s8.begin(), std::plus<int>());
-    std::transform (a11.begin(), a11.end(), a21.begin(), s9.begin(), std::minus<int>());
-    std::transform (b11.begin(), b11.end(), b12.begin(), s10.begin(), std::plus<int>());
+    // std::transform (b12.begin(), b12.end(), b22.begin(), s1.begin(), std::minus<int>());
+    // std::transform (a11.begin(), a11.end(), a12.begin(), s2.begin(), std::plus<int>());
+    // std::transform (a21.begin(), a21.end(), a22.begin(), s3.begin(), std::plus<int>());
+    // std::transform (b21.begin(), b21.end(), b11.begin(), s4.begin(), std::minus<int>());
+    // std::transform (a11.begin(), a11.end(), a22.begin(), s5.begin(), std::plus<int>());
+    // std::transform (b11.begin(), b11.end(), b22.begin(), s6.begin(), std::plus<int>());
+    // std::transform (a12.begin(), a12.end(), a22.begin(), s7.begin(), std::minus<int>());
+    // std::transform (b21.begin(), b21.end(), b22.begin(), s8.begin(), std::plus<int>());
+    // std::transform (a11.begin(), a11.end(), a21.begin(), s9.begin(), std::minus<int>());
+    // std::transform (b11.begin(), b11.end(), b12.begin(), s10.begin(), std::plus<int>());
+    s1 = b12 - b22;
+    s2 = a11 + a12;
+    s3 = a21 + a22;
+    s4 = b21 - b11;
+    s5 = a11 + a22;
+    s6 = b11 + b22;
+    s7 = a12 - a22;
+    s8 = b21 + b22;
+    s9 = a11 - a21;
+    s10 = b11 + b12;
 
     auto P1 = Strassen(a11, s1);
     auto P2 = Strassen(s2, b22);
@@ -143,23 +155,27 @@ std::vector<int> Strassen(std::vector<int> A, std::vector<int> B) {
     auto P6 = Strassen(s7, s8);
     auto P7 = Strassen(s9, s10);
 
-    std::vector<int> c11(n*n);
-    std::vector<int> c12(n*n);
-    std::vector<int> c21(n*n);
-    std::vector<int> c22(n*n);
+    std::valarray<int> c11(n*n);
+    std::valarray<int> c12(n*n);
+    std::valarray<int> c21(n*n);
+    std::valarray<int> c22(n*n);
 
-    std::transform (P5.begin(), P5.end(), P4.begin(), c11.begin(), std::plus<int>());
-    std::transform (c11.begin(), c11.end(), P2.begin(), c11.begin(), std::minus<int>());
-    std::transform (c11.begin(), c11.end(), P6.begin(), c11.begin(), std::plus<int>());
+    c11 = P5 + P4 - P2 + P6;
+    // std::transform (P5.begin(), P5.end(), P4.begin(), c11.begin(), std::plus<int>());
+    // std::transform (c11.begin(), c11.end(), P2.begin(), c11.begin(), std::minus<int>());
+    // std::transform (c11.begin(), c11.end(), P6.begin(), c11.begin(), std::plus<int>());
 
-    std::transform (P1.begin(), P1.end(), P2.begin(), c12.begin(), std::plus<int>());
-    std::transform (P3.begin(), P3.end(), P4.begin(), c21.begin(), std::plus<int>());
+    c12 = P1 + P2;
+    // std::transform (P1.begin(), P1.end(), P2.begin(), c12.begin(), std::plus<int>());
+    c21 = P3 + P4;
+    // std::transform (P3.begin(), P3.end(), P4.begin(), c21.begin(), std::plus<int>());
 
-    std::transform (P5.begin(), P5.end(), P1.begin(), c22.begin(), std::plus<int>());
-    std::transform (c22.begin(), c22.end(), P3.begin(), c22.begin(), std::minus<int>());
-    std::transform (c22.begin(), c22.end(), P7.begin(), c22.begin(), std::minus<int>());
+    c22 = P5 + P1 - P3 - P7;
+    // std::transform (P5.begin(), P5.end(), P1.begin(), c22.begin(), std::plus<int>());
+    // std::transform (c22.begin(), c22.end(), P3.begin(), c22.begin(), std::minus<int>());
+    // std::transform (c22.begin(), c22.end(), P7.begin(), c22.begin(), std::minus<int>());
 
-    std::vector<int> result(N*N);
+    std::valarray<int> result(N*N);
 
     for (int i = 0; i < n; i++) {
         for (int j = 0 ; j < n; j++) {
@@ -191,11 +207,11 @@ int main(int argc, char* argv[]) {
     const char* multiplication_result_file_name = "multiplication_result.dat";
     const char* file_name = "time.dat";
 
-    std::vector<int> vec1(N*N);
-    std::vector<int> vec2(N*N);
+    std::valarray<int> vec1(N*N);
+    std::valarray<int> vec2(N*N);
 
-    GenRandomVector(&vec1);
-    GenRandomVector(&vec2);
+    GenRandomvalarray(&vec1);
+    GenRandomvalarray(&vec2);
 
     #if VALIDTION
     PutData2File(matrix1_file_name, &vec1, N, N);
