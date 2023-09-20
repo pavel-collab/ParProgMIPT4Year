@@ -23,29 +23,47 @@ def CleanFile(file_path):
 
 def main():
     matrix_scales = [2**j for j in range(10)]
+
     simple_matrix_multiplication_time = []
     cache_friendly_matrix_multiplication_time = []
     strassen_time = []
 
+    #------------------------------------------------------------------------------------
     for scale in matrix_scales:
-        subprocess.run(["../simple_matrix_multiplication", f'{scale}'])
-    simple_matrix_multiplication_time = ImportDataTimeFileContent("./time.dat")
-    CleanFile("./time.dat")
+        tmp = []
+        for _ in range(10):
+            subprocess.run(["../simple_matrix_multiplication", f'{scale}'])
+        tmp = ImportDataTimeFileContent("./time.dat")
+        simple_matrix_multiplication_time.append(np.mean(tmp))
+        CleanFile("./time.dat")
+    #------------------------------------------------------------------------------------
 
+    #------------------------------------------------------------------------------------
     for scale in matrix_scales:
-        subprocess.run(["../cache_friendly_matrix_multiplication", f'{scale}'])
-    cache_friendly_matrix_multiplication_time = ImportDataTimeFileContent("./time.dat")
-    CleanFile("./time.dat")
+        tmp = []
+        for _ in range(10):
+            subprocess.run(["../cache_friendly_matrix_multiplication", f'{scale}'])
+        tmp = ImportDataTimeFileContent("./time.dat")
+        cache_friendly_matrix_multiplication_time.append(np.mean(tmp))
+        CleanFile("./time.dat")
+    #------------------------------------------------------------------------------------
 
+    #------------------------------------------------------------------------------------
     for scale in matrix_scales:
-        subprocess.run(["../strassen", f'{scale}'])
-    strassen_time = ImportDataTimeFileContent("./time.dat")
-    CleanFile("./time.dat")
+        tmp = []
+        for _ in range(10):
+            subprocess.run(["../strassen", f'{scale}'])
+        tmp = ImportDataTimeFileContent("./time.dat")
+        strassen_time.append(np.mean(tmp))
+        CleanFile("./time.dat")
+    #------------------------------------------------------------------------------------
 
     date = datetime.strftime(datetime.now(), "%d.%m.%Y-%H.%M.%S")
-    save_file_name = r"../images/" + date + r".jpg"
+    save_file_name = r"../images/" + "StrassenTest_" + date + r".jpg"
 
     fig = plt.figure()
+
+    plt.title("Compare Strassen algorithm with others")
 
     plt.scatter(np.array(matrix_scales), np.array(simple_matrix_multiplication_time), s=10)
     plt.plot(np.array(matrix_scales), np.array(simple_matrix_multiplication_time), label='simple_matrix_multiplication')
@@ -55,6 +73,9 @@ def main():
 
     plt.scatter(np.array(matrix_scales), np.array(strassen_time), s=10)
     plt.plot(np.array(matrix_scales), np.array(strassen_time), label='strassen')
+
+    plt.xlabel("matrix scale")
+    plt.ylabel("time (ms)")
 
     plt.legend()
     plt.grid()

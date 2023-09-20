@@ -9,9 +9,6 @@
 #include <chrono>
 
 //TODO: replace int matrix to template T matrix to be able to use float or double multiplication
-//TODO: make macroses for various types of schedule
-//TODO: make a macros for validaiton
-//TODO: make an experiment to compare different types of schedule
 //TODO: improve plots
 
 int GetIdx(int i, int j, int N) {

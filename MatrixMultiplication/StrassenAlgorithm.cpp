@@ -53,6 +53,7 @@ void PrintMatrix(const std::vector<int> &matrix, size_t matrix_size) {
     }
 }
 
+//TODO: look through implementation from the YouTube, think about using std::valarray instead of std::vector and reduce the number of tmp vectors
 void CacheFriendlyMatrixMultiplication(const std::vector<int> &matrix1, 
                                        const std::vector<int> &matrix2,
                                        std::vector<int>* result) {
