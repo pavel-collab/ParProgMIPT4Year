@@ -115,16 +115,16 @@ std::valarray<int> Strassen(std::valarray<int> A, std::valarray<int> B) {
         }
     }
 
-    std::valarray<int> s1(n*n);
-    std::valarray<int> s2(n*n);
-    std::valarray<int> s3(n*n);
-    std::valarray<int> s4(n*n);
-    std::valarray<int> s5(n*n);
-    std::valarray<int> s6(n*n);
-    std::valarray<int> s7(n*n);
-    std::valarray<int> s8(n*n);
-    std::valarray<int> s9(n*n);
-    std::valarray<int> s10(n*n);
+    // std::valarray<int> s1(n*n);
+    // std::valarray<int> s2(n*n);
+    // std::valarray<int> s3(n*n);
+    // std::valarray<int> s4(n*n);
+    // std::valarray<int> s5(n*n);
+    // std::valarray<int> s6(n*n);
+    // std::valarray<int> s7(n*n);
+    // std::valarray<int> s8(n*n);
+    // std::valarray<int> s9(n*n);
+    // std::valarray<int> s10(n*n);
 
     // std::transform (b12.begin(), b12.end(), b22.begin(), s1.begin(), std::minus<int>());
     // std::transform (a11.begin(), a11.end(), a12.begin(), s2.begin(), std::plus<int>());
@@ -136,41 +136,42 @@ std::valarray<int> Strassen(std::valarray<int> A, std::valarray<int> B) {
     // std::transform (b21.begin(), b21.end(), b22.begin(), s8.begin(), std::plus<int>());
     // std::transform (a11.begin(), a11.end(), a21.begin(), s9.begin(), std::minus<int>());
     // std::transform (b11.begin(), b11.end(), b12.begin(), s10.begin(), std::plus<int>());
-    s1 = b12 - b22;
-    s2 = a11 + a12;
-    s3 = a21 + a22;
-    s4 = b21 - b11;
-    s5 = a11 + a22;
-    s6 = b11 + b22;
-    s7 = a12 - a22;
-    s8 = b21 + b22;
-    s9 = a11 - a21;
-    s10 = b11 + b12;
+    
+    // s1 = b12 - b22;
+    // s2 = a11 + a12;
+    // s3 = a21 + a22;
+    // s4 = b21 - b11;
+    // s5 = a11 + a22;
+    // s6 = b11 + b22;
+    // s7 = a12 - a22;
+    // s8 = b21 + b22;
+    // s9 = a11 - a21;
+    // s10 = b11 + b12;
 
-    auto P1 = Strassen(a11, s1);
-    auto P2 = Strassen(s2, b22);
-    auto P3 = Strassen(s3, b11);
-    auto P4 = Strassen(a22, s4);
-    auto P5 = Strassen(s5, s6);
-    auto P6 = Strassen(s7, s8);
-    auto P7 = Strassen(s9, s10);
+    // auto P1 = Strassen(a11, s1);
+    // auto P2 = Strassen(s2, b22);
+    // auto P3 = Strassen(s3, b11);
+    // auto P4 = Strassen(a22, s4);
+    // auto P5 = Strassen(s5, s6);
+    // auto P6 = Strassen(s7, s8);
+    // auto P7 = Strassen(s9, s10);
 
     std::valarray<int> c11(n*n);
     std::valarray<int> c12(n*n);
     std::valarray<int> c21(n*n);
     std::valarray<int> c22(n*n);
-
-    c11 = P5 + P4 - P2 + P6;
+    
+    c11 = Strassen(a11 + a22, b11 + b22) + Strassen(a22, b21 - b11) - Strassen(a11 + a12, b22) + Strassen(a12 - a22, b21 + b22);
     // std::transform (P5.begin(), P5.end(), P4.begin(), c11.begin(), std::plus<int>());
     // std::transform (c11.begin(), c11.end(), P2.begin(), c11.begin(), std::minus<int>());
     // std::transform (c11.begin(), c11.end(), P6.begin(), c11.begin(), std::plus<int>());
 
-    c12 = P1 + P2;
+    c12 = Strassen(a11, b12 - b22) + Strassen(a11 + a12, b22);
     // std::transform (P1.begin(), P1.end(), P2.begin(), c12.begin(), std::plus<int>());
-    c21 = P3 + P4;
+    c21 = Strassen(a21 + a22, b11) + Strassen(a22, b21 - b11);
     // std::transform (P3.begin(), P3.end(), P4.begin(), c21.begin(), std::plus<int>());
 
-    c22 = P5 + P1 - P3 - P7;
+    c22 = Strassen(a11 + a22, b11 + b22) + Strassen(a11, b12 - b22) - Strassen(a21 + a22, b11) - Strassen(a11 - a21, b11 + b12);
     // std::transform (P5.begin(), P5.end(), P1.begin(), c22.begin(), std::plus<int>());
     // std::transform (c22.begin(), c22.end(), P3.begin(), c22.begin(), std::minus<int>());
     // std::transform (c22.begin(), c22.end(), P7.begin(), c22.begin(), std::minus<int>());
