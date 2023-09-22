@@ -4,13 +4,23 @@ import subprocess
 from datetime import datetime
 import argparse
 
+# def ImportDataTimeFileContent(file_name: str):
+#     res = []
+#     with open(file_name) as file:
+#         lines = [line.rstrip() for line in file]
+    
+#     for line in lines:
+#         res.append(list(map(int, line.split(" "))))
+    
+#     return np.array(res)
+
 def ImportDataTimeFileContent(file_name: str):
     res = []
     with open(file_name) as file:
         lines = [line.rstrip() for line in file]
     
     for line in lines:
-        res.append(list(map(int, line.split(" "))))
+        res.append(list(map(float, line.split(" "))))
     
     return np.array(res)
 
