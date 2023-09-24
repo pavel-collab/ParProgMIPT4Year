@@ -7,11 +7,24 @@
 #include <cstdlib>
 #include <vector>
 #include <cassert>
-#include <x86intrin.h>
+#include <omp.h>
 #include <chrono>
+#include <x86intrin.h>
 
 int GetIdx(int i, int j, int N) {
     return i*N + j;
+}
+
+void PrintMatrix(const std::vector<float> &matrix, size_t matrix_size) {
+    auto sz = sqrt(matrix.size());
+    assert(sz - matrix_size < 1e-6);
+
+    for (size_t i = 0; i < matrix_size; ++i) {
+        for (size_t j = 0; j < matrix_size; ++j) {
+            printf("%0.2lf ", matrix[GetIdx(i, j, matrix_size)]);
+        }
+        printf("\n");
+    }
 }
 
 // Функция записывает двумерный массив значений в файл
@@ -60,7 +73,7 @@ void GenRandomVector(std::vector<float>* vec) {
 void Transpose(std::vector<float>* matrix, int size) {
     for (int i = 0; i < size-1; ++i) {
         for (int j = i+1; j < size; ++j) {
-            std::swap((*matrix)[GetIdx(i, j, 8)], (*matrix)[GetIdx(j, i, 8)]);
+            std::swap((*matrix)[GetIdx(i, j, size)], (*matrix)[GetIdx(j, i, size)]);
         }
     }
 }
@@ -102,21 +115,53 @@ void VectorizedMatrixMulriplication(std::vector<float> &matrix1,
                 // кастуем младшие 32 бита в float и копируем результат в переменную res
                 float res = _mm_cvtss_f32(reslt);
 
-                (*result)[GetIdx(i, j, N)] = res;
+                (*result)[GetIdx(i, j, N)] += res;
             }
         }
     }
 }
 
-void PrintMatrix(const std::vector<float> &matrix, size_t matrix_size) {
-    auto sz = sqrt(matrix.size());
-    assert(sz - matrix_size < 1e-6);
+void ParallelVectorizedMatrixMulriplication(std::vector<float> &matrix1, 
+                                    std::vector<float> &matrix2,
+                                    std::vector<float>* result) {
+    assert(sqrt(matrix1.size()) - sqrt(matrix2.size()) < 1e-6);
+    assert(sqrt(matrix1.size()) - sqrt(result->size()) < 1e-6);
 
-    for (size_t i = 0; i < matrix_size; ++i) {
-        for (size_t j = 0; j < matrix_size; ++j) {
-            printf("%0.2lf ", matrix[GetIdx(i, j, matrix_size)]);
+    int N = static_cast<int>(sqrt(matrix1.size()));
+    std::fill(result->begin(), result->end(), 0.0);
+    Transpose(&matrix2, N);
+
+    #pragma omp parallel for schedule(static) shared(matrix1, matrix2, result)
+    for (size_t i = 0; i < N; ++i) {
+        for (size_t j = 0; j < N; ++j) {
+            for (size_t k = 0; k < N; k+=8) { 
+                // загружаем 8 чисел float (по 32 бита) в регистр на 256 бит
+                __m256 va = _mm256_loadu_ps(&matrix1[GetIdx(i, k, N)]);
+                __m256 vb = _mm256_loadu_ps(&matrix2[GetIdx(j, k, N)]);
+
+                // умножаем 2 регистра по 256 бит, получая таким образом перемножение каждой 32-битной ячейки
+                __m256 temp = _mm256_mul_ps(va, vb);
+
+                // извлекаем 128 старших битов в отдельную переменную
+                __m128 vhigh1 = _mm256_extractf128_ps(temp, 1);
+                // у регистра temp отбраысваем старшие биты
+                // таким образом, мы разделили регистр temp на 2 регистра по 128 бит
+                __m128 vhigh2 = _mm256_castps256_ps128(temp);
+
+                // складываем значения всех 32-битных ячеек
+                __m128 reslt = _mm_add_ps(vhigh1, vhigh2);
+
+                reslt = _mm_hadd_ps(reslt, reslt);
+                reslt = _mm_hadd_ps(reslt, reslt);
+
+                // в конце мы получаем 128-битный регистр, где каждое 32-битное значение -- наш искомый ответ
+
+                // кастуем младшие 32 бита в float и копируем результат в переменную res
+                float res = _mm_cvtss_f32(reslt);
+
+                (*result)[GetIdx(i, j, N)] += res;
+            }
         }
-        printf("\n");
     }
 }
 
@@ -139,14 +184,33 @@ int main(int argc, char* argv[]) {
     GenRandomVector(&vec1);
     GenRandomVector(&vec2);
 
-    // PutData2File(matrix1_file_name, &vec1, 8, 8);
-    // PutData2File(matrix2_file_name, &vec2, 8, 8);
+    #if VALIDTION
+    PutData2File(matrix1_file_name, &vec1, N, N);
+    PutData2File(matrix2_file_name, &vec2, N, N);
+    #endif
 
+    #if ALGORITHM == 4
     auto t_start = std::chrono::high_resolution_clock::now();
     VectorizedMatrixMulriplication(vec1, vec2, &result);
     auto t_end = std::chrono::high_resolution_clock::now();
     std::cout << "vectorized_matrix_multiplication " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
+    FILE* fd = fopen(file_name, "a");
+    fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
+    fclose(fd);
+    #endif
 
-    // PutData2File(multiplication_result_file_name, &result, 8, 8);
+    #if ALGORITHM == 5
+    auto t_start = std::chrono::high_resolution_clock::now();
+    ParallelVectorizedMatrixMulriplication(vec1, vec2, &result);
+    auto t_end = std::chrono::high_resolution_clock::now();
+    std::cout << "parallel_vectorized_matrix_multiplication " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
+    FILE* fd = fopen(file_name, "a");
+    fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
+    fclose(fd);
+    #endif
+
+    #if VALIDTION
+    PutData2File(multiplication_result_file_name, &result, N, N);
+    #endif
     return 0;
 }

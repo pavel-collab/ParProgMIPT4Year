@@ -8,9 +8,6 @@
 #include <omp.h>
 #include <chrono>
 
-//TODO: replace int matrix to template T matrix to be able to use float or double multiplication
-//TODO: improve plots
-
 int GetIdx(int i, int j, int N) {
     return i*N + j;
 }
@@ -20,13 +17,13 @@ int GetIdx(int i, int j, int N) {
 // u -- указатель на массив значений размером M*K
 // M -- количество столбцов в двумерном массиве
 // K -- количество строк в двумерном массиве
-void PutData2File(const char* data_file_name, std::vector<int>* u, int M, int K) {
+void PutData2File(const char* data_file_name, std::vector<float>* u, int M, int K) {
     FILE* fd = fopen(data_file_name, "a");
     if (fd) {
         for (int m = 0; m < M; ++m) {
             for (int k = 0; k < K; ++k) {
                 int idx = GetIdx(m, k, M);
-                fprintf(fd, "%d ", (*u)[idx]);
+                fprintf(fd, "%0.2lf ", (*u)[idx]);
             }
             fprintf(fd, "\n");
         }
@@ -38,7 +35,7 @@ void PutData2File(const char* data_file_name, std::vector<int>* u, int M, int K)
 In modern C++ it’s recommended not to use any time-based seeds and std::rand, 
 but instead to use random_device to generate a seed.
 */
-void GenRandomVector(std::vector<int>* vec) {
+void GenRandomVector(std::vector<float>* vec) {
     // First create an instance of an engine.
     std::random_device rnd_device;
     // Specify the engine and distribution.
@@ -46,14 +43,20 @@ void GenRandomVector(std::vector<int>* vec) {
     // Generates random integers
     std::uniform_int_distribution<int> dist {1, 10};
     
+    std::vector<int> tmp(vec->size());
     auto gen = [&dist, &mersenne_engine]() {
                    return dist(mersenne_engine);
                };
 
     std::generate(begin(*vec), end(*vec), gen);
+
+    // A little hack, cause for now I can generate only integers by using std::generate
+    for (int i = 0; i < vec->size(); i++) {
+        (*vec)[i] = static_cast<float>(tmp[i]);
+    }
 }
 
-void GenEyeMatrix(std::vector<int>* matrix, size_t matrix_size) {
+void GenEyeMatrix(std::vector<float>* matrix, size_t matrix_size) {
     auto sz = sqrt(matrix->size());
     assert(sz - matrix_size < 1e-6);
 
@@ -71,22 +74,22 @@ void GenEyeMatrix(std::vector<int>* matrix, size_t matrix_size) {
 //! ATTENTION, in this function you should to pass a matrix size, not vector size
 //! for example, if you have a vector with size 16, the matrix size will be 4.
 //! In other case, programm will read a trash from memory
-void PrintMatrix(const std::vector<int> &matrix, size_t matrix_size) {
+void PrintMatrix(const std::vector<float> &matrix, size_t matrix_size) {
     auto sz = sqrt(matrix.size());
     assert(sz - matrix_size < 1e-6);
 
     for (size_t i = 0; i < matrix_size; ++i) {
         for (size_t j = 0; j < matrix_size; ++j) {
-            printf("%2d ", matrix[GetIdx(i, j, matrix_size)]);
+            printf("%0.2lf ", matrix[GetIdx(i, j, matrix_size)]);
         }
         printf("\n");
     }
 }
 
 //! ATTENTION matrix result shold be feeled by zeros
-void SimpleMatrixMulriplication(const std::vector<int> &matrix1, 
-                                const std::vector<int> &matrix2,
-                                std::vector<int>* result) {
+void SimpleMatrixMulriplication(const std::vector<float> &matrix1, 
+                                const std::vector<float> &matrix2,
+                                std::vector<float>* result) {
     assert(sqrt(matrix1.size()) - sqrt(matrix2.size()) < 1e-6);
     assert(sqrt(matrix1.size()) - sqrt(result->size()) < 1e-6);
 
@@ -102,9 +105,9 @@ void SimpleMatrixMulriplication(const std::vector<int> &matrix1,
     }
 }
 
-void CacheFriendlyMatrixMultiplication(const std::vector<int> &matrix1, 
-                                       const std::vector<int> &matrix2,
-                                       std::vector<int>* result) {
+void CacheFriendlyMatrixMultiplication(const std::vector<float> &matrix1, 
+                                       const std::vector<float> &matrix2,
+                                       std::vector<float>* result) {
     assert(sqrt(matrix1.size()) - sqrt(matrix2.size()) < 1e-6);
     assert(sqrt(matrix1.size()) - sqrt(result->size()) < 1e-6);
 
@@ -120,9 +123,9 @@ void CacheFriendlyMatrixMultiplication(const std::vector<int> &matrix1,
     }
 }
 
-void ParallelSimpleMatrixMultiplication(const std::vector<int> &matrix1, 
-                                        const std::vector<int> &matrix2,
-                                        std::vector<int>* result) {
+void ParallelSimpleMatrixMultiplication(const std::vector<float> &matrix1, 
+                                        const std::vector<float> &matrix2,
+                                        std::vector<float>* result) {
     assert(sqrt(matrix1.size()) - sqrt(matrix2.size()) < 1e-6);
     assert(sqrt(matrix1.size()) - sqrt(result->size()) < 1e-6);
 
@@ -167,9 +170,9 @@ void ParallelSimpleMatrixMultiplication(const std::vector<int> &matrix1,
     #endif
 }
 
-void ParallelCacheFriendlyMatrixMultiplication(const std::vector<int> &matrix1, 
-                                        const std::vector<int> &matrix2,
-                                        std::vector<int>* result) {
+void ParallelCacheFriendlyMatrixMultiplication(const std::vector<float> &matrix1, 
+                                               const std::vector<float> &matrix2,
+                                               std::vector<float>* result) {
     assert(sqrt(matrix1.size()) - sqrt(matrix2.size()) < 1e-6);
     assert(sqrt(matrix1.size()) - sqrt(result->size()) < 1e-6);
 
@@ -200,9 +203,9 @@ int main(int argc, char* argv[]) {
     const char* multiplication_result_file_name = "multiplication_result.dat";
     const char* file_name = "time.dat";
 
-    std::vector<int> vec1(N*N);
-    std::vector<int> vec2(N*N);
-    std::vector<int> result(N*N);
+    std::vector<float> vec1(N*N);
+    std::vector<float> vec2(N*N);
+    std::vector<float> result(N*N);
 
     GenRandomVector(&vec1);
     GenRandomVector(&vec2);

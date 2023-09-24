@@ -66,10 +66,10 @@ def main():
     plt.title("Compare Strassen algorithm with others")
 
     plt.scatter(np.array(matrix_scales), np.array(simple_matrix_multiplication_time), s=10)
-    plt.plot(np.array(matrix_scales), np.array(simple_matrix_multiplication_time), label='simple_matrix_multiplication')
+    plt.plot(np.array(matrix_scales), np.array(simple_matrix_multiplication_time), label='simple')
 
     plt.scatter(np.array(matrix_scales), np.array(cache_friendly_matrix_multiplication_time), s=10)
-    plt.plot(np.array(matrix_scales), np.array(cache_friendly_matrix_multiplication_time), label='cache_friendly_matrix_multiplication')
+    plt.plot(np.array(matrix_scales), np.array(cache_friendly_matrix_multiplication_time), label='cache_friendly')
 
     plt.scatter(np.array(matrix_scales), np.array(strassen_time), s=10)
     plt.plot(np.array(matrix_scales), np.array(strassen_time), label='strassen')

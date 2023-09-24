@@ -22,8 +22,8 @@ def CleanFile(file_path):
     fd.close()
 
 def main():
-    # matrix_scales = list(range(1, 101))
-    matrix_scales = list(range(1000, 1020))
+    # matrix_scales = list(range(4, 101))
+    matrix_scales = list(range(1000, 1500, 50))
 
     parallel_simple_matrix_multiplication_time_static = []
     parallel_simple_matrix_multiplication_time_dynamic = []
@@ -32,7 +32,7 @@ def main():
     #------------------------------------------------------------------------------------
     for scale in matrix_scales:
         tmp = []
-        for _ in range(10):
+        for _ in range(5):
             subprocess.run(["../parallel_simple_matrix_multiplication_static", f'{scale}'])
         tmp = ImportDataTimeFileContent("./time.dat")
         parallel_simple_matrix_multiplication_time_static.append(np.mean(tmp))
@@ -42,7 +42,7 @@ def main():
     #------------------------------------------------------------------------------------
     for scale in matrix_scales:
         tmp = []
-        for _ in range(10):
+        for _ in range(5):
             subprocess.run(["../parallel_simple_matrix_multiplication_dynamic", f'{scale}'])
         tmp = ImportDataTimeFileContent("./time.dat")
         parallel_simple_matrix_multiplication_time_dynamic.append(np.mean(tmp))
@@ -52,7 +52,7 @@ def main():
     #------------------------------------------------------------------------------------
     for scale in matrix_scales:
         tmp = []
-        for _ in range(10):
+        for _ in range(5):
             subprocess.run(["../parallel_simple_matrix_multiplication_guided", f'{scale}'])
         tmp = ImportDataTimeFileContent("./time.dat")
         parallel_simple_matrix_multiplication_time_guided.append(np.mean(tmp))
