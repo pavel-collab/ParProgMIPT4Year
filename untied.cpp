@@ -8,10 +8,20 @@
 
 extern void UslessTaskFunction(int task_id) {
     printf("Out: %d\n", task_id);
+    /*
+    Some kind of independent operations, for example, some mathematical operations.
+    It may used in a dynamic programming, when you divide your problem to a lo of 
+    independent (or almost independing) tasks, and it doesn't matter, what thread 
+    executes this task.
+    */
 }
 
 extern void PotentialDangerousUslessTaskFunction(int task_id, int thead_rank) {
     printf("Task [%d] Thread rank: %d\n", task_id, thead_rank);
+    /*
+    Some kind of operations, that uses an internal states of thread (for example id of
+    private variable).
+    */
 }
 
 int main(int argc, char* argv[]) {
@@ -25,6 +35,14 @@ int main(int argc, char* argv[]) {
     // set the number of threads
     omp_set_num_threads(threads_num);
     // start the parallel section
+    /*
+    Here we make the one thread to generate a lot of utied tasks in a single
+    scope. That means, that all of the tasks will be produced by one thread, but
+    may be executed by another. In this case we will have a potential dengerous
+    program behaviour for example if the function that executed in a task uses
+    some kinds of variables special for the thread, that created this task. 
+    It may be thread id or thread privet variables.
+    */
     #pragma omp parallel
     {
         #pragma omp single
@@ -32,6 +50,11 @@ int main(int argc, char* argv[]) {
             int i = 0;
             #pragma omp task untied
             {
+                /*
+                We just spawn a lot of tasks in a single scope to
+                overflow the tasks pull and make master thread to stop to do some tasks
+                and give it to another threads for execution.
+                */
                 for (i = 0; i < LARGE_NUMBER; i++) {
                     printf("Task %d was born by thread %d\n", i, omp_get_thread_num());
                     #pragma omp task
