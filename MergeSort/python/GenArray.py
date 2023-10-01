@@ -50,9 +50,7 @@ def main():
     # size_list = [
     #     80000000,  100000000
     # ]
-    size_list = [
-        1000000
-    ]
+    size_list = [50]
 
     for size in size_list:
         file_name = "test" + str(size) + ".dat"

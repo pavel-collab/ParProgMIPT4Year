@@ -56,6 +56,17 @@ void quicksort(int a[], int start, int end)
     quicksort(a, pivot + 1, end);
 }
 
+void bubbleSort(int* arr, int n1, int n2)
+{
+    int i, j;
+    for (i = n1; i < n2; i++)
+        // Last i elements are already
+        // in place
+        for (j = n1; j < n1 + n2 - i; j++)
+            if (arr[j] > arr[j + 1])
+                std::swap(arr[j], arr[j + 1]);
+}
+
 //! не забываем освобождать массив в конце программы
 int* GetArrayFromFile(const char* file_name, int* size) {
     std::string s;
@@ -184,8 +195,8 @@ void ParallelMerge(int* arr, unsigned n1, unsigned n2) {
     unsigned m = (n1 + n2) / 2;
     if (n2 - n1 <= LIST_SIZE) {
         // Merge(arr, n1, n2);
-        printf("Use quick sort\n");
-        quicksort(arr, n1, n2);
+        // quicksort(arr, n1, n2);
+        bubbleSort(arr, n1, n2);
         return;
     }
     
@@ -221,17 +232,29 @@ int main(int argc, char* argv[]) {
     const char* file_name = argv[1];
     int N = 0;
     int* arr = GetArrayFromFile(file_name, &N);
+    const char* time_file_name = "time.dat";
 
     // As our sort function is recursive, it need to enable nested parallelism
     omp_set_nested(1);
 
     // set the number of threads
     omp_set_num_threads(N_proc);
-    ParallelMerge(arr, 0, N-1);
-    // quickSort(arr, N);
 
+    #if TIME
+    auto t_start = std::chrono::high_resolution_clock::now();
+    ParallelMerge(arr, 0, N-1);
+    auto t_end = std::chrono::high_resolution_clock::now();
+    std::cout << "N = " << N << " time: " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
+    FILE* fd = fopen(time_file_name, "a");
+    fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
+    fclose(fd);
+    #endif
+
+    #if VALIDTION
+    ParallelMerge(arr, 0, N-1);
     const char* result_file_name = "result.txt";
     PrintArray2File(result_file_name, arr, N);
+    #endif
 
 	return 0;
 }

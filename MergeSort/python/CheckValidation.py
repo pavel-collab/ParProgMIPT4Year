@@ -38,7 +38,7 @@ def main():
         print("[-] Error, no file with data")
         raise RuntimeError
     
-    subprocess.run(["../a.out", f'{file_path}', f'{N_proc}'])
+    subprocess.run(["../validation", f'{file_path}', f'{N_proc}'])
 
     result = ImportArrayFromFile("./result.txt")
 
