@@ -6,7 +6,7 @@
 
 #define LARGE_NUMBER 1000000
 
-extern void UslessTaskFunction(int task_id) {
+extern void UslessTaskFunction(int task_id, int thead_rank) {
     printf("Out: %d\n", task_id);
     /*
     Some kind of independent operations, for example, some mathematical operations.
@@ -14,14 +14,23 @@ extern void UslessTaskFunction(int task_id) {
     independent (or almost independing) tasks, and it doesn't matter, what thread 
     executes this task.
     */
+
+    //* Atrificial timeout
+    // for (auto _ = 0; _ < 10000000; ++_) {}
+    sleep(1000);
+    printf("Task [%d] is executed by thread rank: %d\n", task_id, thead_rank);
 }
 
 extern void PotentialDangerousUslessTaskFunction(int task_id, int thead_rank) {
-    printf("Task [%d] Thread rank: %d\n", task_id, thead_rank);
+    printf("Task [%d] is executed by thread rank: %d\n", task_id, thead_rank);
     /*
     Some kind of operations, that uses an internal states of thread (for example id of
     private variable).
     */
+    //* Atrificial timeout
+    // for (auto _ = 0; _ < 10000000; ++_) {}
+    sleep(1000);
+    printf("Task [%d] is executed by thread rank: %d\n", task_id, thead_rank);
 }
 
 int main(int argc, char* argv[]) {

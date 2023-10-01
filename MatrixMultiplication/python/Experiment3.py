@@ -22,7 +22,7 @@ def CleanFile(file_path):
     fd.close()
 
 def main():
-    matrix_scales = [2**j for j in range(10)]
+    matrix_scales = [2**j for j in range(3, 14)]
 
     simple_matrix_multiplication_time = []
     cache_friendly_matrix_multiplication_time = []
@@ -31,7 +31,7 @@ def main():
     #------------------------------------------------------------------------------------
     for scale in matrix_scales:
         tmp = []
-        for _ in range(10):
+        for _ in range(5):
             subprocess.run(["../simple_matrix_multiplication", f'{scale}'])
         tmp = ImportDataTimeFileContent("./time.dat")
         simple_matrix_multiplication_time.append(np.mean(tmp))
@@ -41,7 +41,7 @@ def main():
     #------------------------------------------------------------------------------------
     for scale in matrix_scales:
         tmp = []
-        for _ in range(10):
+        for _ in range(5):
             subprocess.run(["../cache_friendly_matrix_multiplication", f'{scale}'])
         tmp = ImportDataTimeFileContent("./time.dat")
         cache_friendly_matrix_multiplication_time.append(np.mean(tmp))
@@ -51,7 +51,7 @@ def main():
     #------------------------------------------------------------------------------------
     for scale in matrix_scales:
         tmp = []
-        for _ in range(10):
+        for _ in range(5):
             subprocess.run(["../strassen", f'{scale}'])
         tmp = ImportDataTimeFileContent("./time.dat")
         strassen_time.append(np.mean(tmp))

@@ -4,6 +4,7 @@
 #include <cstring>
 #include <sstream>
 #include <chrono>
+#include <omp.h>
 
 //! не забываем освобождать массив в конце программы
 int* GetArrayFromFile(const char* file_name, int* size) {
@@ -67,6 +68,8 @@ void CopyArray(int* src, int* dst, unsigned a, unsigned b) {
 }
 
 void Bond(int* arr, unsigned n1, unsigned m, unsigned n2) {
+    printf("Thread [%d] execute Bond(n1=%d, m=%d, n2=%d)\n", omp_get_thread_num(), n1, m, n2);
+
     unsigned N1 = m - n1 + 1;
     unsigned N2 = n2 - m;
 
@@ -122,6 +125,58 @@ void Merge(int* arr, unsigned n1, unsigned n2) {
     }
 }
 
+//? It could be the master thread always creates a tasks only for itself and execute it.
+//? Need to try firstly devide the array not for 2 item, but for example for N_proc items, or
+//? N_proc*2 items. So, we will have N_proc*2 tasks.
+void ParallelMerge(int* arr, unsigned n1, unsigned n2) {
+    printf("Thread [%d] execute Merge(n1=%d, n2=%d)\n", omp_get_thread_num(), n1, n2);
+
+    unsigned m = (n1 + n2) / 2;
+    if (n1 == n2)
+        return;
+    
+    #pragma omp parallel 
+    {
+        #pragma omp single 
+        {
+            #pragma omp task shared(arr)
+            {
+                ParallelMerge(arr, n1, m);
+            }
+
+            #pragma omp task shared(arr)
+            {
+                ParallelMerge(arr, m+1, n2);
+            }
+
+            #pragma omp taskwait
+            
+            #pragma omp task shared(arr)
+            {
+                Bond(arr, n1, m, n2);
+            }
+        }
+    }
+}
+
 int main(int argc, char* argv[]) {
+    
+    if (argc != 3) {
+        fprintf(stderr, "Usage %s file_name n_proc\n", argv[0]);
+        return 1;
+    }
+
+    int N_proc = atoi(argv[2]);
+    const char* file_name = argv[1];
+    int N = 0;
+    int* arr = GetArrayFromFile(file_name, &N);
+
+    // set the number of threads
+    omp_set_num_threads(N_proc);
+    ParallelMerge(arr, 0, N-1);
+
+    const char* result_file_name = "result.txt";
+    PrintArray2File(result_file_name, arr, N);
+
 	return 0;
 }

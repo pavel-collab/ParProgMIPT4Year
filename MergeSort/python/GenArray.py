@@ -51,7 +51,7 @@ def main():
     #     80000000,  100000000
     # ]
     size_list = [
-        12
+        1000000
     ]
 
     for size in size_list:
