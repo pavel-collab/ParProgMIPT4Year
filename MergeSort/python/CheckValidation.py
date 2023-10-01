@@ -11,12 +11,6 @@ def ImportArrayFromFile(file_path):
 
     return arr
 
-def RunConsistentProgram(file_path):
-    subprocess.run(["../a.out", f'{file_path}'])
-
-def RunParallelProgram(file_path, n_proc):
-    subprocess.run(["mpiexec", "-n", f'{n_proc}', "../main", f'{file_path}', f'{n_proc}'])
-
 def ArrCmp(arr1, arr2):
     if (len(arr1) != len(arr2)):
         print("[-] Arrays have not equal length")
@@ -35,6 +29,8 @@ def main():
     parser.add_argument("-f", "--file_path", help="*description*")
     args = parser.parse_args()
 
+    N_proc = 3
+
     file_path = ""
     if args.file_path != None:
         file_path = args.file_path
@@ -42,19 +38,15 @@ def main():
         print("[-] Error, no file with data")
         raise RuntimeError
     
-    RunConsistentProgram(file_path)
-    RunParallelProgram(file_path, 2)
+    subprocess.run(["../a.out", f'{file_path}', f'{N_proc}'])
 
-    consistent_result = ImportArrayFromFile("./consistent.txt")
-    parallel_result = ImportArrayFromFile("./parallel.txt")
+    result = ImportArrayFromFile("./result.txt")
 
     valid_array = ImportArrayFromFile(file_path)
     valid_array.sort()
     
-    if (ArrCmp(consistent_result, valid_array) == True):
-        print("Consistent result is valid")
-    if (ArrCmp(parallel_result, valid_array) == True):
-        print("Parallel result is valid")
+    if (ArrCmp(result, valid_array) == True):
+        print("Result is valid")
 
 
 if __name__ == '__main__':

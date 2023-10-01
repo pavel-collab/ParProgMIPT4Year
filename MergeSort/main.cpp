@@ -6,6 +6,56 @@
 #include <chrono>
 #include <omp.h>
 
+// размер массива, при котором поток сочтет целесообразным не создавать новые таски, а сортировать его на месте
+#define LIST_SIZE 4
+
+// Разделение по схеме Lomuto
+int partition(int a[], int start, int end)
+{
+    // Выбираем крайний правый элемент в качестве опорного элемента массива
+    int pivot = a[end];
+ 
+    // элементы, меньшие точки поворота, будут перемещены влево от `pIndex`
+    // элементы больше, чем точка поворота, будут сдвинуты вправо от `pIndex`
+    // равные элементы могут идти в любом направлении
+    int pIndex = start;
+ 
+    // каждый раз, когда мы находим элемент, меньший или равный опорному, `pIndex`
+    // увеличивается, и этот элемент будет помещен перед опорной точкой.
+    for (int i = start; i < end; i++)
+    {
+        if (a[i] <= pivot)
+        {
+            std::swap(a[i], a[pIndex]);
+            pIndex++;
+        }
+    }
+ 
+    // поменять местами `pIndex` с пивотом
+    std::swap(a[pIndex], a[end]);
+ 
+    // вернуть `pIndex` (индекс опорного элемента)
+    return pIndex;
+}
+ 
+// Процедура быстрой сортировки
+void quicksort(int a[], int start, int end)
+{
+    // базовое условие
+    if (start >= end) {
+        return;
+    }
+ 
+    // переставить элементы по оси
+    int pivot = partition(a, start, end);
+ 
+    // повторяем подмассив, содержащий элементы, меньшие опорной точки
+    quicksort(a, start, pivot - 1);
+ 
+    // повторяем подмассив, содержащий элементы, превышающие точку опоры
+    quicksort(a, pivot + 1, end);
+}
+
 //! не забываем освобождать массив в конце программы
 int* GetArrayFromFile(const char* file_name, int* size) {
     std::string s;
@@ -132,8 +182,12 @@ void ParallelMerge(int* arr, unsigned n1, unsigned n2) {
     printf("Thread [%d] execute Merge(n1=%d, n2=%d)\n", omp_get_thread_num(), n1, n2);
 
     unsigned m = (n1 + n2) / 2;
-    if (n1 == n2)
+    if (n2 - n1 <= LIST_SIZE) {
+        // Merge(arr, n1, n2);
+        printf("Use quick sort\n");
+        quicksort(arr, n1, n2);
         return;
+    }
     
     #pragma omp parallel 
     {
@@ -151,10 +205,7 @@ void ParallelMerge(int* arr, unsigned n1, unsigned n2) {
 
             #pragma omp taskwait
             
-            #pragma omp task shared(arr)
-            {
-                Bond(arr, n1, m, n2);
-            }
+            Bond(arr, n1, m, n2);
         }
     }
 }
@@ -171,9 +222,13 @@ int main(int argc, char* argv[]) {
     int N = 0;
     int* arr = GetArrayFromFile(file_name, &N);
 
+    // As our sort function is recursive, it need to enable nested parallelism
+    omp_set_nested(1);
+
     // set the number of threads
     omp_set_num_threads(N_proc);
     ParallelMerge(arr, 0, N-1);
+    // quickSort(arr, N);
 
     const char* result_file_name = "result.txt";
     PrintArray2File(result_file_name, arr, N);
