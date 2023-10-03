@@ -27,6 +27,7 @@ def ArrCmp(arr1, arr2):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--file_path", help="*description*")
+    parser.add_argument("-m", "--mode", help="*description*")
     args = parser.parse_args()
 
     N_proc = 3
@@ -38,7 +39,14 @@ def main():
         print("[-] Error, no file with data")
         raise RuntimeError
     
-    subprocess.run(["../validation", f'{file_path}', f'{N_proc}'])
+    if args.mode == None:
+        print("[-] Error, please make mode")
+    elif args.mode == "merge":
+        subprocess.run(["../merge_validation", f'{file_path}', f'{N_proc}'])
+    elif args.mode == "quick":
+        subprocess.run(["../quick_validation", f'{file_path}', f'{N_proc}'])
+    elif args.mode == "bubble":
+        subprocess.run(["../bubble_validation", f'{file_path}', f'{N_proc}'])
 
     result = ImportArrayFromFile("./result.txt")
 

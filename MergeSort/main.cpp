@@ -6,20 +6,24 @@
 #include <chrono>
 #include <omp.h>
 
-// размер массива, при котором поток сочтет целесообразным не создавать новые таски, а сортировать его на месте
-#define LIST_SIZE 4
+//! NOTE: recursion_depth is a recursion depth parametr
+//! if it will be too small and the amount of elements will be too large, it can lead to system error
+//! operation system will not be able to allocate enoth resources for new threads, cause in this task we use
+//! nested parallelism
+
+// #define DEBUG
 
 // Разделение по схеме Lomuto
 int partition(int a[], int start, int end)
 {
     // Выбираем крайний правый элемент в качестве опорного элемента массива
     int pivot = a[end];
- 
+
     // элементы, меньшие точки поворота, будут перемещены влево от `pIndex`
     // элементы больше, чем точка поворота, будут сдвинуты вправо от `pIndex`
     // равные элементы могут идти в любом направлении
     int pIndex = start;
- 
+
     // каждый раз, когда мы находим элемент, меньший или равный опорному, `pIndex`
     // увеличивается, и этот элемент будет помещен перед опорной точкой.
     for (int i = start; i < end; i++)
@@ -30,14 +34,14 @@ int partition(int a[], int start, int end)
             pIndex++;
         }
     }
- 
+
     // поменять местами `pIndex` с пивотом
     std::swap(a[pIndex], a[end]);
- 
+
     // вернуть `pIndex` (индекс опорного элемента)
     return pIndex;
 }
- 
+
 // Процедура быстрой сортировки
 void quicksort(int a[], int start, int end)
 {
@@ -45,13 +49,13 @@ void quicksort(int a[], int start, int end)
     if (start >= end) {
         return;
     }
- 
+
     // переставить элементы по оси
     int pivot = partition(a, start, end);
- 
+
     // повторяем подмассив, содержащий элементы, меньшие опорной точки
     quicksort(a, start, pivot - 1);
- 
+
     // повторяем подмассив, содержащий элементы, превышающие точку опоры
     quicksort(a, pivot + 1, end);
 }
@@ -129,7 +133,9 @@ void CopyArray(int* src, int* dst, unsigned a, unsigned b) {
 }
 
 void Bond(int* arr, unsigned n1, unsigned m, unsigned n2) {
+    #ifdef DEBUG
     printf("Thread [%d] execute Bond(n1=%d, m=%d, n2=%d)\n", omp_get_thread_num(), n1, m, n2);
+    #endif
 
     unsigned N1 = m - n1 + 1;
     unsigned N2 = n2 - m;
@@ -186,17 +192,27 @@ void Merge(int* arr, unsigned n1, unsigned n2) {
     }
 }
 
-//? It could be the master thread always creates a tasks only for itself and execute it.
-//? Need to try firstly devide the array not for 2 item, but for example for N_proc items, or
-//? N_proc*2 items. So, we will have N_proc*2 tasks.
-void ParallelMerge(int* arr, unsigned n1, unsigned n2) {
+void ParallelMerge(int* arr, unsigned n1, unsigned n2, int recursion_depth) {
+    #ifdef DEBUG
     printf("Thread [%d] execute Merge(n1=%d, n2=%d)\n", omp_get_thread_num(), n1, n2);
+    #endif
 
     unsigned m = (n1 + n2) / 2;
-    if (n2 - n1 <= LIST_SIZE) {
-        // Merge(arr, n1, n2);
-        // quicksort(arr, n1, n2);
+    if (n2 - n1 <= recursion_depth) {
+        //! Here we can define the sort algorithm for the limit size of recursion depth
+
+        #if MERGE
+        Merge(arr, n1, n2);
+        #endif
+
+        #if QUICK
+        quicksort(arr, n1, n2);
+        #endif
+
+        #if BUBBLE
         bubbleSort(arr, n1, n2);
+        #endif 
+
         return;
     }
     
@@ -206,12 +222,12 @@ void ParallelMerge(int* arr, unsigned n1, unsigned n2) {
         {
             #pragma omp task shared(arr)
             {
-                ParallelMerge(arr, n1, m);
+                ParallelMerge(arr, n1, m, recursion_depth);
             }
 
             #pragma omp task shared(arr)
             {
-                ParallelMerge(arr, m+1, n2);
+                ParallelMerge(arr, m+1, n2, recursion_depth);
             }
 
             #pragma omp taskwait
@@ -223,9 +239,14 @@ void ParallelMerge(int* arr, unsigned n1, unsigned n2) {
 
 int main(int argc, char* argv[]) {
     
-    if (argc != 3) {
+    if (argc < 3) {
         fprintf(stderr, "Usage %s file_name n_proc\n", argv[0]);
         return 1;
+    }
+
+    int recursion_depth = 10;
+    if (argc == 4) {
+        recursion_depth = atoi(argv[3]);
     }
 
     int N_proc = atoi(argv[2]);
@@ -234,6 +255,18 @@ int main(int argc, char* argv[]) {
     int* arr = GetArrayFromFile(file_name, &N);
     const char* time_file_name = "time.dat";
 
+    #if MERGE
+    printf("Use merge\n");
+    #endif
+
+    #if QUICK
+    printf("Use quick\n");
+    #endif
+
+    #if BUBBLE
+    printf("Use bubble\n");
+    #endif 
+    
     // As our sort function is recursive, it need to enable nested parallelism
     omp_set_nested(1);
 
@@ -242,7 +275,7 @@ int main(int argc, char* argv[]) {
 
     #if TIME
     auto t_start = std::chrono::high_resolution_clock::now();
-    ParallelMerge(arr, 0, N-1);
+    ParallelMerge(arr, 0, N-1, recursion_depth);
     auto t_end = std::chrono::high_resolution_clock::now();
     std::cout << "N = " << N << " time: " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
     FILE* fd = fopen(time_file_name, "a");
@@ -251,7 +284,7 @@ int main(int argc, char* argv[]) {
     #endif
 
     #if VALIDTION
-    ParallelMerge(arr, 0, N-1);
+    ParallelMerge(arr, 0, N-1, recursion_depth);
     const char* result_file_name = "result.txt";
     PrintArray2File(result_file_name, arr, N);
     #endif
