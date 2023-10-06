@@ -216,25 +216,19 @@ void ParallelMerge(int* arr, unsigned n1, unsigned n2, int recursion_depth) {
         return;
     }
     
-    #pragma omp parallel 
+    #pragma omp task shared(arr)
     {
-        #pragma omp single 
-        {
-            #pragma omp task shared(arr)
-            {
-                ParallelMerge(arr, n1, m, recursion_depth);
-            }
-
-            #pragma omp task shared(arr)
-            {
-                ParallelMerge(arr, m+1, n2, recursion_depth);
-            }
-
-            #pragma omp taskwait
-            
-            Bond(arr, n1, m, n2);
-        }
+        ParallelMerge(arr, n1, m, recursion_depth);
     }
+
+    #pragma omp task shared(arr)
+    {
+        ParallelMerge(arr, m+1, n2, recursion_depth);
+    }
+
+    #pragma omp taskwait
+    
+    Bond(arr, n1, m, n2);
 }
 
 int main(int argc, char* argv[]) {
@@ -275,7 +269,13 @@ int main(int argc, char* argv[]) {
 
     #if TIME
     auto t_start = std::chrono::high_resolution_clock::now();
-    ParallelMerge(arr, 0, N-1, recursion_depth);
+    #pragma omp parallel
+    {
+        #pragma omp single
+        {
+            ParallelMerge(arr, 0, N-1, recursion_depth);
+        }
+    }
     auto t_end = std::chrono::high_resolution_clock::now();
     std::cout << "N = " << N << " time: " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
     FILE* fd = fopen(time_file_name, "a");

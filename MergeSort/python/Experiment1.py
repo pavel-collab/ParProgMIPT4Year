@@ -26,8 +26,8 @@ def CleanFile(file_path):
     fd.close()
 
 def main():
-    # executable_file = "../bubble"
-    executable_file = "../quick"
+    executable_file = "../bubble"
+    # executable_file = "../quick"
     test_file_path = "../tests/test1048576.dat"
 
     time_file_path = "./time.dat"
@@ -58,7 +58,7 @@ def main():
     critical_depth_idx = int(min_time_idx / depth_point_amnt)
 
     fig = plt.figure()
-    plt.title(f'Min is {min_time} with proc {proces_amnt_list[critical_proc_amnt_idx]} and depth {recursion_depth_list[critical_depth_idx]}')
+    plt.title(f'Min is {round(min_time, 2)} (ms) with proc {proces_amnt_list[critical_proc_amnt_idx]} and depth {recursion_depth_list[critical_depth_idx]}')
     ax_3d = fig.add_subplot(projection="3d")
     ax_3d.plot_surface(proc_grid, depth_grid, data)
     ax_3d.plot_wireframe(proc_grid, depth_grid, data)

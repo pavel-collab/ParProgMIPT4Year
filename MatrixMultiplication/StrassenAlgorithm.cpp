@@ -55,7 +55,6 @@ void PrintMatrix(const std::valarray<int> &matrix, size_t matrix_size) {
     }
 }
 
-//TODO: look through implementation from the YouTube, think about using std::valarray instead of std::valarray and reduce the number of tmp valarrays
 void CacheFriendlyMatrixMultiplication(const std::valarray<int> &matrix1, 
                                        const std::valarray<int> &matrix2,
                                        std::valarray<int>* result) {
@@ -74,7 +73,10 @@ void CacheFriendlyMatrixMultiplication(const std::valarray<int> &matrix1,
     }
 }
 
-// Guess, that marix scale is divided by 2 in any recursion step
+//! NOTE: Guess, that marix scale is divided by 2 in any recursion step
+/**
+ * Here we use std::valarray to be able to add one vector to another
+*/
 std::valarray<int> Strassen(std::valarray<int> A, std::valarray<int> B) {
     assert(sqrt(A.size()) - sqrt(B.size()) < 1e-6);
     int N = static_cast<int>(sqrt(A.size()));
@@ -85,7 +87,7 @@ std::valarray<int> Strassen(std::valarray<int> A, std::valarray<int> B) {
     //     std::valarray<int> C = {A[0] * B[0]};
     //     return C;
     // }
-    if (N <= 4) {
+    if (N <= 256) {
         std::valarray<int> C(N*N);
         CacheFriendlyMatrixMultiplication(A, B, &C);
         return C;
