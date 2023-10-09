@@ -25,15 +25,22 @@ def CleanFile(file_path):
     fd.write("")
     fd.close()
 
+'''
+In the experiment we firstly test bubble sort.
+And after quick.
+'''
+
 def main():
-    executable_file = "../bubble"
-    # executable_file = "../quick"
+    # executable_file = "../bubble"
+    executable_file = "../quick"
     test_file_path = "../tests/test1048576.dat"
 
     time_file_path = "./time.dat"
 
-    proces_amnt_list = list(range(1, 8+1))
-    recursion_depth_list = list(range(200, 350+1))
+    proces_amnt_list = list(range(1, 15+1))
+
+    # recursion_depth_list = list(range(200, 300+1))
+    recursion_depth_list = list(range(10, 100+1))
 
     for proc_n in proces_amnt_list:
         for depth in recursion_depth_list:

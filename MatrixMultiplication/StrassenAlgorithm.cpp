@@ -77,6 +77,7 @@ void CacheFriendlyMatrixMultiplication(const std::valarray<int> &matrix1,
 /**
  * Here we use std::valarray to be able to add one vector to another
 */
+//TODO: look through if it possible to use performance_list.reserve(this->instance_managers_.size()) (reserve method for valarray)
 std::valarray<int> Strassen(std::valarray<int> A, std::valarray<int> B) {
     assert(sqrt(A.size()) - sqrt(B.size()) < 1e-6);
     int N = static_cast<int>(sqrt(A.size()));

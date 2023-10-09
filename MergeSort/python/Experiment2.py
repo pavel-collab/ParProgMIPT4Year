@@ -21,12 +21,12 @@ def CleanFile(file_path):
     fd.close()
 
 def main():
-    proceses = [1, 2, 3, 4, 5, 6, 7, 8]
+    proceses = range(1, 15+1)
     executable_file_bubble = "../bubble"
     executable_file_quick = "../quick"
     test_file_path = "../tests/test1048576.dat"
 
-    depth = 228
+    depth = 90
 
     #------------------------------------------------------------------------------------
     for proc in proceses:
