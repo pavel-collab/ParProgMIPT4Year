@@ -1,4 +1,5 @@
-//* Compilation: g++ -fopenmp main.cpp 
+//! This example is not correct. Author couldn't to achive real nested task parallelism.
+//! To view nested tasks execution result you need to be able to stop some threads during their work.
 
 #include <iostream>
 #include <omp.h>
