@@ -15,12 +15,22 @@ def ImportArrayFromFile(file_path):
 def main():
     signal_file_path = "../data/custom_signal.dat"
     time_file_path = "../data/time.dat"
+    fft_file_path = "../fft.dat"
 
     data = ImportArrayFromFile(signal_file_path)
     time = ImportArrayFromFile(time_file_path)
+    fft_result = ImportArrayFromFile(fft_file_path)
 
-    plt.plot(time, data)
-    plt.savefig("../images/main.png")
+    fft_data_real = fft(data).real
+
+
+    # assert np.allclose(fft_data_real, fft_result)
+    n = np.arange(len(time))
+    # plt.stem(n, fft_data_real)
+    # plt.stem(n, fft_result)
+    plt.scatter(n, fft_data_real, s=3)
+    plt.scatter(n, fft_result, s=3)
+    plt.savefig("../images/validation.png")
 
 if __name__ == '__main__':
     main()
