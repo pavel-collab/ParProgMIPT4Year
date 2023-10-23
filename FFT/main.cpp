@@ -3,6 +3,9 @@
 #include <fstream>
 #include <sstream>
 #include <complex>
+#include <chrono>
+#include <omp.h>
+#include <cassert>
 
 #define pi 3.1415
 
@@ -102,26 +105,6 @@ std::complex<double>* SlowFT(std::complex<double>* signal, uint64_t N) {
     return spectr;
 }
 
-// void SplitSignalHonest(std::complex<double>* signal, std::complex<double>* honest_part, uint64_t N) {
-//     size_t honest_idx = 0;
-//     for (size_t i = 0; i < N; ++i) {
-//         if (i  % 2 ==0) {
-//             honest_part[honest_idx] = signal[i];
-//             honest_idx++;
-//         }
-//     }
-// }
-
-// void SplitSignalOdd(std::complex<double>* signal, std::complex<double>* negative_part, uint64_t N) {
-//     size_t negative_idx = 0;
-//     for (size_t i = 0; i < N; ++i) {
-//         if (i  % 2 != 0) {
-//             negative_part[negative_idx] = signal[i];
-//             negative_idx++;
-//         }
-//     }
-// }
-
 /**
  * With fast Fourier transform algorithm we split given array of signals to parts with honest
  * and odd indexes. This function produce two arrays with honest and odd indexes elements.
@@ -159,40 +142,86 @@ std::complex<double>* ConcatenatePositiveAndNegative(std::complex<double>* posit
     return result;
 }
 
-std::complex<double>* SlowFFT(std::complex<double>* signal, uint64_t N) {
-    std::complex<double>* spectr = (std::complex<double>*) calloc(N, sizeof(std::complex<double>));
+std::complex<double>* FFT(std::complex<double>* signal, uint64_t N) {
+    // std::complex<double>* spectr = (std::complex<double>*) calloc(N, sizeof(std::complex<double>));
 
     // When we achive the depth of recursion, we just use naive algorithm.
     if (N < 32) {
         return SlowFT(signal, N);
-    } else {
-        std::complex<double>* x_even = (std::complex<double>*) calloc(N/2, sizeof(std::complex<double>));
-        std::complex<double>* x_odd = (std::complex<double>*) calloc(N/2, sizeof(std::complex<double>));
-
-        // SplitSignalHonest(signal, x_even, N);
-        // SplitSignalOdd(signal, x_odd, N);
-
-        SplitSignal2HonestAndOdd(signal, x_even, x_odd, N);
-
-        auto fft_even = SlowFFT(x_even, N/2);
-        auto fft_odd = SlowFFT(x_odd, N/2);
-        auto res = ConcatenatePositiveAndNegative(fft_even, fft_odd, N/2);
-
-        free(fft_even);
-        free(fft_odd);
-        free(x_even);
-        free(x_odd);
-        return res;
     }
 
-    return spectr;
+    std::complex<double>* x_even = (std::complex<double>*) calloc(N/2, sizeof(std::complex<double>));
+    std::complex<double>* x_odd = (std::complex<double>*) calloc(N/2, sizeof(std::complex<double>));
+
+    SplitSignal2HonestAndOdd(signal, x_even, x_odd, N);
+
+    auto fft_even = FFT(x_even, N/2);
+    auto fft_odd = FFT(x_odd, N/2);
+    auto res = ConcatenatePositiveAndNegative(fft_even, fft_odd, N/2);
+
+    free(fft_even);
+    free(fft_odd);
+    free(x_even);
+    free(x_odd);
+    return res;
 }
 
-int main() {
+std::complex<double>* ParallelFFT(std::complex<double>* signal, uint64_t N) {
+    // std::complex<double>* spectr = (std::complex<double>*) calloc(N, sizeof(std::complex<double>));
+
+    // When we achive the depth of recursion, we just use naive algorithm.
+    if (N < 32) {
+        return SlowFT(signal, N);
+    }
+
+    std::complex<double>* x_even = (std::complex<double>*) calloc(N/2, sizeof(std::complex<double>));
+    std::complex<double>* x_odd = (std::complex<double>*) calloc(N/2, sizeof(std::complex<double>));
+
+    SplitSignal2HonestAndOdd(signal, x_even, x_odd, N);
+
+    std::complex<double>* fft_even;
+    std::complex<double>* fft_odd;
+
+    #pragma omp task shared(fft_even)
+    {
+        fft_even = FFT(x_even, N/2);
+    }
+    #pragma omp task shared(fft_odd)
+    {
+        fft_odd = FFT(x_odd, N/2);
+    }
+
+    #pragma omp taskwait
+    assert(fft_even != NULL);
+    assert(fft_odd != NULL);
+
+    auto res = ConcatenatePositiveAndNegative(fft_even, fft_odd, N/2);
+
+    free(fft_even);
+    free(fft_odd);
+    free(x_even);
+    free(x_odd);
+    return res;
+}
+
+int main(int argc, char* argv[]) {
+    
+    if (argc < 2) {
+        fprintf(stderr, "Usage %s n_proc\n", argv[0]);
+        return 1;
+    }
+    unsigned N_proc = atoi(argv[1]);
+    // As our fft function is recursive, it need to enable nested parallelism
+    omp_set_nested(1);
+    // set the number of threads
+    omp_set_num_threads(N_proc);
+
     const char* signal_file_path = "./data/custom_signal.dat";
     
     const char* real_result_file_path = "./fft_real.dat";
     const char* imag_result_file_path = "./fft_imag.dat";
+
+    const char* time_file_name = "time.dat";
 
     // The number of values in signal array
     uint64_t N;
@@ -207,9 +236,45 @@ int main() {
     */
     auto complex_signal = Cast2Complex(signal, N);
 
-    // Here we calculate FFT of signal and contain the result in complex value array
-    auto spectr = SlowFFT(complex_signal, N);
+    // Start to measure work time
+    auto t_start = std::chrono::high_resolution_clock::now();
 
+    // Here we calculate FT by different algorithms of signal and contain the result in complex value array
+    std::complex<double>* spectr;
+    // Naive algorithm
+    #if ALGORITHM == 0
+    spectr = SlowFT(complex_signal, N);
+    #endif
+
+    // FFT
+    #if ALGORITHM == 1
+    spectr = FFT(complex_signal, N);
+    #endif
+
+    // parallel FFT (with omp tasks)
+    #if ALGORITHM == 2
+    #pragma omp parallel
+    {
+        #pragma omp single
+        {
+            spectr = ParallelFFT(complex_signal, N);
+        }
+    }
+    #endif
+
+    assert(spectr != NULL);
+
+    // End to measure work time
+    auto t_end = std::chrono::high_resolution_clock::now();
+    std::cout << "N = " << N << " time: " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
+    
+    #ifdef TIME
+    FILE* fd = fopen(time_file_name, "a");
+    fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
+    fclose(fd);
+    #endif
+
+    #ifdef VALIDATION
     // As complex objects are difficult to analyze, we should to represent it through real and imaginary parts
     auto spectr_real = DescribeRealPart(spectr, N);
     auto spectr_imag = DescribeImagPart(spectr, N);
@@ -220,6 +285,7 @@ int main() {
 
     free(spectr_real);
     free(spectr_imag);
+    #endif
 
     free(complex_signal);
     free(signal);

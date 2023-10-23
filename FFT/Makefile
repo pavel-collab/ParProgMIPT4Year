@@ -1,8 +1,9 @@
 all:
-	g++ main.cpp
+	g++ -DVALIDATION -o validation main.cpp
+	g++ -DTIME -o time_measure main.cpp
 
 clear:
-	rm a.out
+	rm validation time_measure
 	rm *.dat
 
 clear_signals:
