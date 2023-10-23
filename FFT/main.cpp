@@ -8,6 +8,7 @@
 #include <cassert>
 
 #define pi 3.1415
+// #define DEBUG
 
 double* GetArrayFromFile(const char* file_name, uint64_t* size) {
     std::string s;
@@ -167,7 +168,9 @@ std::complex<double>* FFT(std::complex<double>* signal, uint64_t N) {
 }
 
 std::complex<double>* ParallelFFT(std::complex<double>* signal, uint64_t N) {
-    // std::complex<double>* spectr = (std::complex<double>*) calloc(N, sizeof(std::complex<double>));
+    #ifdef DEBUG
+    printf("Thread [%d] N = %ld\n", omp_get_thread_num(), N);
+    #endif
 
     // When we achive the depth of recursion, we just use naive algorithm.
     if (N < 32) {
@@ -184,11 +187,11 @@ std::complex<double>* ParallelFFT(std::complex<double>* signal, uint64_t N) {
 
     #pragma omp task shared(fft_even)
     {
-        fft_even = FFT(x_even, N/2);
+        fft_even = ParallelFFT(x_even, N/2);
     }
     #pragma omp task shared(fft_odd)
     {
-        fft_odd = FFT(x_odd, N/2);
+        fft_odd = ParallelFFT(x_odd, N/2);
     }
 
     #pragma omp taskwait
@@ -268,13 +271,13 @@ int main(int argc, char* argv[]) {
     auto t_end = std::chrono::high_resolution_clock::now();
     std::cout << "N = " << N << " time: " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
     
-    #ifdef TIME
+    #if TIME
     FILE* fd = fopen(time_file_name, "a");
     fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
     fclose(fd);
     #endif
 
-    #ifdef VALIDATION
+    #if VALIDATION
     // As complex objects are difficult to analyze, we should to represent it through real and imaginary parts
     auto spectr_real = DescribeRealPart(spectr, N);
     auto spectr_imag = DescribeImagPart(spectr, N);
