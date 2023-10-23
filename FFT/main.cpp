@@ -206,17 +206,17 @@ std::complex<double>* ParallelFFT(std::complex<double>* signal, uint64_t N) {
 
 int main(int argc, char* argv[]) {
     
-    if (argc < 2) {
-        fprintf(stderr, "Usage %s n_proc\n", argv[0]);
+    if (argc < 3) {
+        fprintf(stderr, "Usage %s signal_file_path n_proc\n", argv[0]);
         return 1;
     }
-    unsigned N_proc = atoi(argv[1]);
+    unsigned N_proc = atoi(argv[2]);
+    const char* signal_file_path = argv[1]; 
+
     // As our fft function is recursive, it need to enable nested parallelism
     omp_set_nested(1);
     // set the number of threads
     omp_set_num_threads(N_proc);
-
-    const char* signal_file_path = "./data/custom_signal.dat";
     
     const char* real_result_file_path = "./fft_real.dat";
     const char* imag_result_file_path = "./fft_imag.dat";
