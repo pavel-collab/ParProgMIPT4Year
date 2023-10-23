@@ -14,22 +14,51 @@ def ImportArrayFromFile(file_path):
 
 def main():
     signal_file_path = "../data/custom_signal.dat"
-    time_file_path = "../data/time.dat"
-    fft_file_path = "../fft.dat"
+    
+    real_fft_file_path = "../fft_real.dat"
+    imag_fft_file_path = "../fft_imag.dat"
 
     data = ImportArrayFromFile(signal_file_path)
-    time = ImportArrayFromFile(time_file_path)
-    fft_result = ImportArrayFromFile(fft_file_path)
+    fft_result_real = ImportArrayFromFile(real_fft_file_path)
+    fft_result_imag = ImportArrayFromFile(imag_fft_file_path)
 
     fft_data_real = fft(data).real
+    fft_data_imag = fft(data).imag
 
+    n = np.arange(len(fft_result_real))
 
-    # assert np.allclose(fft_data_real, fft_result)
-    n = np.arange(len(time))
-    # plt.stem(n, fft_data_real)
-    # plt.stem(n, fft_result)
-    plt.scatter(n, fft_data_real, s=3)
-    plt.scatter(n, fft_result, s=3)
+    assert len(fft_result_real) == len(fft_result_imag)
+    assert len(fft_result_real) == len(fft_data_real)
+
+    #--------------------------------------------------------------------------------
+
+    plt.figure(figsize=(27, 7))
+
+    plt.subplot(1, 2, 1)
+    
+    plt.scatter(n, fft_data_real, s=3, label='correct fft')
+    plt.scatter(n, fft_result_real, s=3, label='c++ alg')
+    
+    plt.title('Validation of the fft real part')
+    # plt.xlabel() 
+    # plt.ylabel() 
+    plt.grid()
+    plt.legend()
+
+    #--------------------------------------------------------------------------------
+
+    plt.subplot(1, 2, 2)
+
+    plt.scatter(n, fft_data_imag, s=3, label='correct fft')
+    plt.scatter(n, fft_result_imag, s=3, label='c++ alg')
+
+    plt.title('Validation of the fft imag part')
+    # plt.ylabel()
+    # plt.xlabel()
+    plt.grid()
+    plt.legend()
+
+    #--------------------------------------------------------------------------------
     plt.savefig("../images/validation.png")
 
 if __name__ == '__main__':
