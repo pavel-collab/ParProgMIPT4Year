@@ -44,7 +44,7 @@ def PutArray2File(file_path, arr):
             fd.write(str(round(data, 4)) + " ")
 
 def main():
-    time = np.linspace(-10, 10, 2**12)
+    time = np.linspace(-10, 10, 2**20)
     time_file_path = "../data/time.dat"
     PutArray2File(time_file_path, time)
 
