@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import signal as sg
+import matplotlib.pyplot as plt
 
 def GenMeandr2File(file_path: str, ampl: float, freq: int, time, offload=0, duty=0.5):
     with open(file_path, "a") as fd:
@@ -33,8 +34,9 @@ def GenCustomSignal2File(file_path: str, ampl: float, freq: int, time, offload=0
 
         sin_signal = (ampl*2) * np.sin((omega*10) * time)
 
+        signal = meandr*sin_signal
         fd.write(str(len(meandr)) + "\n")
-        for data in meandr*sin_signal:
+        for data in signal:
             fd.write(str(round(data, 4)) + " ")
 
 def PutArray2File(file_path, arr):
@@ -44,20 +46,19 @@ def PutArray2File(file_path, arr):
             fd.write(str(round(data, 4)) + " ")
 
 def main():
-    samples_amount = 2**20
+    T_from = -10 # sec
+    T_to = 10 # sec
+    freq = 1 # Hz
 
-    time = np.linspace(-10, 10, samples_amount)
-    time_file_path = "../data/time.dat"
-    PutArray2File(time_file_path, time)
+    samples_list = [2**x for x in range(5, 20+1)]
 
-    meandr_file_path = "../data/meandr.dat"
-    GenMeandr2File(meandr_file_path, 0.5, 1, time, 0.5)
+    for samples_amount in samples_list:
+        time = np.linspace(T_from, T_to, samples_amount)
+        time_file_path = "../data/time" + f"_{samples_amount}_" + ".dat"
+        PutArray2File(time_file_path, time)
 
-    sin_file_path = "../data/sin.dat"
-    GenSin2File(sin_file_path, 1, 1, time)
-
-    custom_signal_file_path = "../data/custom_signal.dat"
-    GenCustomSignal2File(custom_signal_file_path, 0.5, 1, time, 0.5)
+        custom_signal_file_path = "../data/custom_signal" + f"_{samples_amount}_" + ".dat"
+        GenCustomSignal2File(custom_signal_file_path, 0.5, freq, time, 0.5)
 
 if __name__ == '__main__':
     main()

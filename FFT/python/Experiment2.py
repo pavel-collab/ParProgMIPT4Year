@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import subprocess
 from datetime import datetime
+import argparse
+from sys import exit
 
 def ImportDataTimeFileContent(file_name: str) -> list:
     res_list = []
@@ -21,9 +23,18 @@ def CleanFile(file_path):
     fd.close()
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--file", type=str, help="The name of file with data")
+    args = parser.parse_args()
+
+    if args.file != None:
+        signal_file_path = args.file
+    else:
+        print("[-] Error, please set the path to the data file. Usage python3 Experiment2.py -f data_file_path")
+        exit(1)
+
     proceses = range(1, 15+1)
     executable_parallel_fft = "../parallel_fft_time"
-    signal_file_path = "../data/custom_signal.dat"
 
     #------------------------------------------------------------------------------------
     for proc in proceses:
