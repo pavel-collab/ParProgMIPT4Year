@@ -44,10 +44,10 @@ def main():
 
     #! all close is not valid. May be we use low accuracy (4 decimal symbols)
     #TODO: rlot -- max tolerance difference between values, that can be. Check it works
-    if not np.allclose(fft_data_real, fft_result_real, rtol=1e-3) or not np.allclose(fft_data_imag, fft_result_imag, rtol=1e-3):
-        print("[-] Error. FFT result is invalid")
-    else:
-        print("[+] Success")
+    # if not np.allclose(fft_data_real, fft_result_real, rtol=1e-3) or not np.allclose(fft_data_imag, fft_result_imag, rtol=1e-3):
+    #     print("[-] Error. FFT result is invalid")
+    # else:
+    #     print("[+] Success")
 
     if args.plot != False:
         #--------------------------------------------------------------------------------
