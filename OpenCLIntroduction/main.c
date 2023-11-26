@@ -2,6 +2,8 @@
 #include <assert.h>
 #include <stdio.h>
 
+#define DEBUG
+
 struct platforms_t {
   cl_uint n;
   cl_platform_id *ids;
@@ -136,6 +138,10 @@ int main() {
 
     ret = clGetDeviceIDs(platforms.ids[i], CL_DEVICE_TYPE_ALL, 0, NULL,
                          &numdevices);
+
+    #ifdef DEBUG
+    printf("[DEBUG] find devices number %d\n", numdevices);
+    #endif
     CHECK_ERR(ret);
 
     devices = (cl_device_id *)malloc(numdevices * sizeof(cl_device_id));

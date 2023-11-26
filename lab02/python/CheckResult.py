@@ -1,4 +1,5 @@
 import numpy as np
+import argparse
 
 def ImportDataFileContent(file_name: str):
     res = []
@@ -6,7 +7,7 @@ def ImportDataFileContent(file_name: str):
         lines = [line.rstrip() for line in file]
     
     for line in lines:
-        res.append(list(map(float, line.split(" "))))
+        if len(line) != 0: res.append(list(map(float, line.split(" "))))
     
     return np.array(res)
 
@@ -16,28 +17,26 @@ def CleanFile(file_path):
     fd.close()
 
 def main():
-    check_result_files = [
-        "../check_result/check_result_task1.txt",
-        "../check_result/check_result_task2.txt",
-        "../check_result/check_result_task3.txt"
-    ]
+    # parse command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--file", type=str, help="Path to the file with data to check out")
+    
+    args = parser.parse_args()
 
-    result_files = [
-        "../result_task1.txt",
-        "../result_task2.txt",
-        "../result_task3.txt"
-    ]
+    if args.file == None:
+        print("[-] Error, expected path to file with data to check out.")
+        return
+    
+    path_to_data_file = args.file
+    valid_data_file_path = "../valid_data.txt"
 
-    for i in range(3):
-        check_result_data = ImportDataFileContent(check_result_files[i])
-        result_data = ImportDataFileContent(result_files[i])
+    valid_data = ImportDataFileContent(valid_data_file_path)
+    data = ImportDataFileContent(path_to_data_file)
 
-        if result_data == check_result_data:
-            print(f"Task {i+1} is ok")
-        else:
-            print(f"Task {i+1} is wrong")
-            print(f"The result is {result_data}")
-            print(f"But correct result is {check_result_data}")
+    if not np.isclose(data.all(), valid_data.all()):
+        print("[-] Error. Data file is not correct")
+    else:
+        print("[+] Success")
 
 if __name__ == '__main__':
     main()
