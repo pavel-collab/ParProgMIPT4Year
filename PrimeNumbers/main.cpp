@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    for (i = 0; i <  N/2; ++i) {
+    for (int i = 0; i <  batch_size/2; ++i) {
         if (is_composite[i]) {
             std:: cout << 2*i + 1 << std::endl;
         }

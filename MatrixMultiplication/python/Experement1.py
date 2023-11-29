@@ -67,9 +67,9 @@ def main():
         tmp = []
         for _ in range(5):
             subprocess.run(["../simple_matrix_multiplication", f'{scale}'])
-        tmp = ImportDataTimeFileContent("./time.dat")
+        tmp = ImportDataTimeFileContent("./time.txt")
         simple_matrix_multiplication_time.append(np.mean(tmp))
-        CleanFile("./time.dat")
+        CleanFile("./time.txt")
     #------------------------------------------------------------------------------------
 
     #------------------------------------------------------------------------------------
@@ -77,9 +77,9 @@ def main():
         tmp = []
         for _ in range(5):
             subprocess.run(["../cache_friendly_matrix_multiplication", f'{scale}'])
-        tmp = ImportDataTimeFileContent("./time.dat")
+        tmp = ImportDataTimeFileContent("./time.txt")
         cache_friendly_matrix_multiplication_time.append(np.mean(tmp))
-        CleanFile("./time.dat")
+        CleanFile("./time.txt")
     #------------------------------------------------------------------------------------
 
     #------------------------------------------------------------------------------------
@@ -87,9 +87,9 @@ def main():
         tmp = []
         for _ in range(5):
             subprocess.run(["../parallel_simple_matrix_multiplication_static", f'{scale}'])
-        tmp = ImportDataTimeFileContent("./time.dat")
+        tmp = ImportDataTimeFileContent("./time.txt")
         parallel_simple_matrix_multiplication_time.append(np.mean(tmp))
-        CleanFile("./time.dat")
+        CleanFile("./time.txt")
     #------------------------------------------------------------------------------------
 
     #------------------------------------------------------------------------------------
@@ -97,9 +97,9 @@ def main():
         tmp = []
         for _ in range(5):
             subprocess.run(["../parallel_cache_friendly_matrix_multiplication", f'{scale}'])
-        tmp = ImportDataTimeFileContent("./time.dat")
+        tmp = ImportDataTimeFileContent("./time.txt")
         parallel_cache_friendly_matrix_multiplication_time.append(np.mean(tmp))
-        CleanFile("./time.dat")
+        CleanFile("./time.txt")
     #------------------------------------------------------------------------------------
 
     if args.vectorization != False:
@@ -108,9 +108,9 @@ def main():
             tmp = []
             for _ in range(5):
                 subprocess.run(["../vectorized_matrix_multiplication", f'{scale}'])
-            tmp = ImportDataTimeFileContent("./time.dat")
+            tmp = ImportDataTimeFileContent("./time.txt")
             vectorization_matrix_multiplication_time.append(np.mean(tmp))
-            CleanFile("./time.dat")
+            CleanFile("./time.txt")
         #------------------------------------------------------------------------------------
 
         #------------------------------------------------------------------------------------
@@ -118,9 +118,9 @@ def main():
             tmp = []
             for _ in range(5):
                 subprocess.run(["../parallel_vectorized_matrix_multiplication", f'{scale}'])
-            tmp = ImportDataTimeFileContent("./time.dat")
+            tmp = ImportDataTimeFileContent("./time.txt")
             parallel_vectorization_matrix_multiplication_time.append(np.mean(tmp))
-            CleanFile("./time.dat")
+            CleanFile("./time.txt")
         #------------------------------------------------------------------------------------
 
     date = datetime.strftime(datetime.now(), "%d.%m.%Y-%H.%M.%S")

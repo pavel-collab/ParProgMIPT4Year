@@ -28,15 +28,17 @@ void fill_arr(double* arr, unsigned ISIZE, unsigned JSIZE) {
 }
 
 double* copy_array(const double* arr, unsigned ISIZE, unsigned JSIZE) {
+    printf("[DEBUG] copy array start\n");
     double* copy_arr = (double*) calloc(ISIZE*JSIZE, sizeof(double));
 
     //TODO: может есть какая-то функция стандартной библиотеки
-    #pragma omp parallel for shared(copy_arr, arr)
     for (int i = 0; i < ISIZE; ++i) {
         for (int j = 0; j < JSIZE; ++j) {
             copy_arr[i*ISIZE + j] = arr[i*ISIZE + j];
         }
     }
+
+    printf("[DEBUG] copy array end\n");
     return copy_arr;
 }
 
@@ -57,6 +59,30 @@ double seq_impl(double* a, double* b, unsigned ISIZE, unsigned JSIZE) {
     // End to measure work time
     auto t_end = std::chrono::high_resolution_clock::now();
     std::cout << "[seq_impl] " << "ISIZE = " << ISIZE << " JSIZE = " << JSIZE << " time: " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
+    return std::chrono::duration<double, std::milli>(t_end-t_start).count();
+}
+
+double par_impl_inner(double* a, double* b, unsigned ISIZE, unsigned JSIZE) {
+    // Start to measure work time
+    auto t_start = std::chrono::high_resolution_clock::now();
+
+    for (size_t i = 0; i < ISIZE+1; ++i) {
+        #pragma omp barrier
+        #pragma omp parallel for shared(a, b)
+        for (size_t j = 0; j < JSIZE; ++j) {
+            if (i < ISIZE)
+                a[i*ISIZE + j] = sin(0.01*a[i*ISIZE + j]);
+            
+            //! сделаем сдвиг циклов
+            if ((i >= 2) && (j >= 3)) {
+                b[(i-2)*ISIZE + j] = a[(i-1)*ISIZE + (j-3)]*2;
+            }
+        }   
+    }
+
+    // End to measure work time
+    auto t_end = std::chrono::high_resolution_clock::now();
+    std::cout << "[par_impl_inner] " << "ISIZE = " << ISIZE << " JSIZE = " << JSIZE << " time: " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms\n";
     return std::chrono::duration<double, std::milli>(t_end-t_start).count();
 }
 
@@ -81,8 +107,9 @@ int main(int argc, char* argv[]) {
     fill_arr(a, ISIZE, JSIZE);
 
     auto seq_time = seq_impl(a, b, ISIZE, JSIZE);
-    // PrintArray2File(valid_data_file_name, b, ISIZE, JSIZE);
-    PrintArray2File(file_name, b, ISIZE, JSIZE);
+    PrintArray2File(valid_data_file_name, b, ISIZE, JSIZE);
+    // auto inner_time = par_impl_inner(a, b, ISIZE, JSIZE);
+    // PrintArray2File(file_name, b, ISIZE, JSIZE);
 
     free(a);
     free(b);

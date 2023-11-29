@@ -10,7 +10,7 @@
 Значение ячейки значала определяется и только потом используется.
 
 Можно распараллелить по внутреннему циклу + поставить в конце барьерную синхронизацию.
-
+Так же можно распараллелить по внешнему циклу на 2 исполнителя. Один будет считать только четные кейсы, а второй только нечетные.
 */
 
 int GetRankStart(int rank, int size, int N) {
@@ -67,6 +67,7 @@ void fill_arr(double* arr, unsigned ISIZE, unsigned JSIZE) {
 }
 
 double* copy_array(const double* arr, unsigned ISIZE, unsigned JSIZE) {
+    printf("[DEBUG] copy array start\n");
     double* copy_arr = (double*) calloc(ISIZE*JSIZE, sizeof(double));
 
     //TODO: может есть какая-то функция стандартной библиотеки
@@ -75,15 +76,68 @@ double* copy_array(const double* arr, unsigned ISIZE, unsigned JSIZE) {
             copy_arr[i*ISIZE + j] = arr[i*ISIZE + j];
         }
     }
+
+    printf("[DEBUG] copy array end\n");
     return copy_arr;
 }
 
-//* mpic++ task1.cpp -o a.out
-//! кроме того, можно распараллелить на 2 исполнителя по внешнему циклу (конкретно в этой задаче)
-int main(int argc, char* argv[]) {
+void PutData2FileParallel(int rank, int size, const char* data_file_name, double* arr, int ISIZE, int JSIZE) {
+    if (rank == 0) {        
+        for (size_t i=0; i<ISIZE; i+=2){
+            int special_signal = 0;
 
-    unsigned ISIZE = 10;
-    unsigned JSIZE = 10;
+            printf("rank = %d step = %ld\n", rank, i);
+            // записываем строку в файл
+            FILE* fd = fopen(data_file_name, "a");
+            for (size_t j = 0; j < JSIZE; j++){
+                fprintf(fd, "%lf ", arr[i*ISIZE + j]);
+            }
+            fprintf(fd, "\n");
+            fclose(fd);
+            MPI_Send(&special_signal, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
+            
+            if (i+2 >= ISIZE)
+                break;
+
+            MPI_Recv(&special_signal, 1, MPI_INT, 1, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+    } else {
+        for (size_t i=1; i<ISIZE; i+=2){
+            int special_signal = 69;
+            MPI_Recv(&special_signal, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+            printf("rank = %d step = %ld\n", rank, i);
+            // записываем строку в файл
+            FILE* fd = fopen(data_file_name, "a");
+            for (size_t j = 0; j < JSIZE; j++){
+                fprintf(fd, "%lf ", arr[i*ISIZE + j]);
+            }
+            fprintf(fd, "\n");
+            fclose(fd);
+
+            MPI_Send(&special_signal, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+
+            if (i+2 >= ISIZE)
+                break;
+        }
+    }
+}
+
+//* mpic++ task1.cpp -o a.out
+//* mpiexec -n 2 ./a.out 
+int main(int argc, char* argv[]) {
+    const char* file_name = "res.txt";
+
+    if (argc < 3) {
+        fprintf(stderr, "Usage %s ISIZE JSIZE\n", argv[0]);
+        return -1;
+    }
+
+    unsigned ISIZE = atoi(argv[1]);
+    unsigned JSIZE = atoi(argv[2]);
+
+    double* arr = (double*) calloc(ISIZE*JSIZE, sizeof(double));
+    fill_arr(arr, ISIZE, JSIZE);
 
     // define variables:
     //  rank -- the number of current process
@@ -103,19 +157,41 @@ int main(int argc, char* argv[]) {
     // Get the number of current pocess (save in variable rank)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    auto rank_start = GetRankStart(rank, size, JSIZE-3);
-    auto rank_end = GetRankEnd(rank, size, JSIZE-3);
+    if (size != 2) {
+        perror("[-] Error starting MPI program. Programm was terminated.\n");
+        MPI_Abort(MPI_COMM_WORLD, rc);
+    }
 
-    for (int i = 2; i < ISIZE; ++i) {
-        // производим прием новой порции данных
-        for (j = rank_start, j <= rank_end; ++j) {
-            // вычисления
+    double start = MPI_Wtime();
+    if (rank == 0) { // четные строки
+        for (size_t i=2; i<ISIZE; i+=2){
+            for (size_t j = 0; j < JSIZE-3; j++){
+                arr[i*ISIZE + j] = sin(5*arr[(i-2)*ISIZE + (j+3)]);
+            }
         }
-        // производим отправку новой порции данных
+        PutData2FileParallel(rank, size, file_name, arr, ISIZE, JSIZE);
+    }  else { // нечетные строки
+        for (size_t i=3; i<ISIZE; i+=2){
+            for (size_t j = 0; j < JSIZE-3; j++){
+                arr[i*ISIZE + j] = sin(5*arr[(i-2)*ISIZE + (j+3)]);
+            }
+        }
+        PutData2FileParallel(rank, size, file_name, arr, ISIZE, JSIZE);
+    }
+    double end = MPI_Wtime();
+    double rank_time = (end - start)*1000;
+
+    if (rank == size-1) {
+        const char* time_file_name = "time.txt";
+        FILE* time_out_file = fopen(time_file_name, "a");
+        if (time_out_file) 
+            fprintf(time_out_file, "%lf ", rank_time);
+        fclose(time_out_file);
     }
 
     // The end of parallel part of program
     MPI_Finalize();
 
+    free(arr);
     return 0;
 }
