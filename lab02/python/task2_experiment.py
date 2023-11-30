@@ -47,11 +47,11 @@ def main():
     CleanFile("./time.txt")
 
     date = datetime.strftime(datetime.now(), "%d.%m.%Y-%H.%M.%S")
-    save_file_name = r"../images/" + "ParalleleAndConsistentAlgoritmsComparing_" + date + r".jpg"
+    save_file_name = r"../images/" + "task2_" + date + r".jpg"
 
     fig = plt.figure()
 
-    plt.title("Comparing of all the algorithms")
+    plt.title("Comparing of all the algorithms task2")
 
     plt.scatter(np.array(scales), np.array(seq_time), s=10)
     plt.plot(np.array(scales), np.array(seq_time), label='seq')
