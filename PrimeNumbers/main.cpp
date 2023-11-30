@@ -27,6 +27,7 @@ int main(int argc, char* argv[]) {
 
     // вычисляем размер поддиапазона
     int batch_size = sqrt(N);
+    // printf("[DEBUG] batch size is %d\n", batch_size);
     batch_size += batch_size&1;
 
     // поскольку четные числа по определению являются составными, 
@@ -34,14 +35,13 @@ int main(int argc, char* argv[]) {
     // Индекс i в массиве отображает нечетное число 2i+1
     
     // хранит флаг простоты числа
-    bool* is_composite = new bool(N/2);
+    int tmp = N/2;
+    bool* is_composite = (bool*) malloc(tmp*sizeof(bool));
     std::fill_n(is_composite, N/2, true); // изначально помечаем все числа, как потенциально простые
 
     // хранит простые числа, найденные в самом первом поддиапазоне.
     // Эти числа ищутся обычным алгоритмом
-    //TODO: заменить на вектор
     std::vector<int> prime_steps;
-    std::fill_n(is_composite, N/2, 0);
 
     // число найденных на первом этапе простых чисел
     int n_prime_steps = 0;
@@ -52,51 +52,70 @@ int main(int argc, char* argv[]) {
         if(is_composite[i/2]) {
             // с шагом равному простому числу перемещаемся по интервалу [простое число/2; m/2]
             // в результате вычеркнем все числа, делящиеся на простое число i (модифицируем массив is_composite)
-            strike(i/2, batch_size/2, i, is_composite);
+            strike(i/2+i, batch_size/2, i, is_composite);
             // запомним шаг\новое простое число
             prime_steps.emplace_back(i);
             n_prime_steps++;
         }
     }   
 
-    for (auto item : prime_steps) {
-        std::cout << item << std::endl;
-    }
+    // printf("[DEBUG] number of prime numbers in the first batch is %d\n", n_prime_steps);
+
+    // for (size_t i = 0; i < n_prime_steps; ++i) {
+    //     std::cout << prime_steps[i] << std::endl;
+    // }
 
     std::vector<std::vector<int>> start_positions;
     for (auto item : prime_steps) {
         std::vector<int> tmp;
         for (int i = 1; i < batch_size; ++i) {
-            int k = ((batch_size*i-1) / item) * item;
-            int p = k % batch_size;
-            
+            int start = i*batch_size;
+            int p = start % item;
+
             int l = 0;
             if (p%2 == 0) {
-                l = p + item;
+                l = start + (item - p);
             } else {
-                l = p + 2*item;
+                l = start + (2*item - p);
             }
-            tmp.emplace_back(l);
+
+            int pos = (l-1) / 2;
+            tmp.emplace_back(pos);
         }
+        // std::cout << "[DEBUG] prime = " << item << std::endl;
+        // for (auto item : tmp) {
+        //     std::cout << "[DEBUG] " << item << " ";
+        // }
+        // std::cout << std::endl;
         start_positions.emplace_back(tmp);
     }
 
+    auto t_start = std::chrono::high_resolution_clock::now();
     #pragma omp parallel for schedule(static,1) shared(is_composite)
-    for (int i = batch_size; i < N; i+=batch_size) {
-        for (int j = 0; j < start_positions.size(); ++j) {
+    // начинаем обходить массив чисел (шагаем целыми батчами) i -- нормер батча
+    for (int i = 1; i < batch_size; i++) {
+        // для выбранного батча перебираем простые числа, 
+        // смотрим позицию, с которой надо начать вычеркавание в этом батче для этого простого числа
+        for (int j = 0; j < n_prime_steps; ++j) {
             auto prime = prime_steps[j];
-            auto start = start_positions[j][i];
+            auto start = start_positions[j][i-1];
 
-            strike(start, i*batch_size/2, prime, is_composite);
+            // printf("[DEBUG] batch = %d, prime = %d, start = %d, end = %d\n", i, prime, start, ((i+1)*batch_size - 1) / 2);
+
+            strike(start, ((i+1)*batch_size - 1) / 2, prime, is_composite);
         }
     }
+    auto t_end = std::chrono::high_resolution_clock::now();
 
-    for (int i = 0; i <  batch_size/2; ++i) {
-        if (is_composite[i]) {
-            std:: cout << 2*i + 1 << std::endl;
-        }
-    }
+    std::cout << "time is " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms" << std::endl;
 
-    delete[] is_composite;
+    // std::cout << std::endl;
+    // for (int i = 0; i < N/2; ++i) {
+    //     if (is_composite[i]) {
+    //         std:: cout << 2*i + 1 << std::endl;
+    //     }
+    // }
+
+    free(is_composite);
     return 0;
 }

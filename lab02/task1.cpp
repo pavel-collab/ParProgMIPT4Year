@@ -66,27 +66,12 @@ void fill_arr(double* arr, unsigned ISIZE, unsigned JSIZE) {
     }
 }
 
-double* copy_array(const double* arr, unsigned ISIZE, unsigned JSIZE) {
-    printf("[DEBUG] copy array start\n");
-    double* copy_arr = (double*) calloc(ISIZE*JSIZE, sizeof(double));
-
-    //TODO: может есть какая-то функция стандартной библиотеки
-    for (int i = 0; i < ISIZE; ++i) {
-        for (int j = 0; j < JSIZE; ++j) {
-            copy_arr[i*ISIZE + j] = arr[i*ISIZE + j];
-        }
-    }
-
-    printf("[DEBUG] copy array end\n");
-    return copy_arr;
-}
-
 void PutData2FileParallel(int rank, int size, const char* data_file_name, double* arr, int ISIZE, int JSIZE) {
     if (rank == 0) {        
         for (size_t i=0; i<ISIZE; i+=2){
             int special_signal = 0;
 
-            printf("rank = %d step = %ld\n", rank, i);
+            // printf("rank = %d step = %ld\n", rank, i);
             // записываем строку в файл
             FILE* fd = fopen(data_file_name, "a");
             for (size_t j = 0; j < JSIZE; j++){
@@ -106,7 +91,7 @@ void PutData2FileParallel(int rank, int size, const char* data_file_name, double
             int special_signal = 69;
             MPI_Recv(&special_signal, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-            printf("rank = %d step = %ld\n", rank, i);
+            // printf("rank = %d step = %ld\n", rank, i);
             // записываем строку в файл
             FILE* fd = fopen(data_file_name, "a");
             for (size_t j = 0; j < JSIZE; j++){
@@ -169,18 +154,23 @@ int main(int argc, char* argv[]) {
                 arr[i*ISIZE + j] = sin(5*arr[(i-2)*ISIZE + (j+3)]);
             }
         }
+        #if VALIDATION
         PutData2FileParallel(rank, size, file_name, arr, ISIZE, JSIZE);
+        #endif
     }  else { // нечетные строки
         for (size_t i=3; i<ISIZE; i+=2){
             for (size_t j = 0; j < JSIZE-3; j++){
                 arr[i*ISIZE + j] = sin(5*arr[(i-2)*ISIZE + (j+3)]);
             }
         }
+        #if VALIDATION
         PutData2FileParallel(rank, size, file_name, arr, ISIZE, JSIZE);
+        #endif
     }
     double end = MPI_Wtime();
     double rank_time = (end - start)*1000;
 
+    #if TIME
     if (rank == size-1) {
         const char* time_file_name = "time.txt";
         FILE* time_out_file = fopen(time_file_name, "a");
@@ -188,6 +178,7 @@ int main(int argc, char* argv[]) {
             fprintf(time_out_file, "%lf ", rank_time);
         fclose(time_out_file);
     }
+    #endif
 
     // The end of parallel part of program
     MPI_Finalize();

@@ -27,6 +27,14 @@ void fill_arr(double* arr, unsigned ISIZE, unsigned JSIZE) {
     }
 }
 
+void eampty_arr(double* arr, unsigned ISIZE, unsigned JSIZE) {
+    for (size_t i = 0; i < ISIZE; ++i) {
+        for (size_t j = 0; j < JSIZE; ++j) {
+            arr[i*ISIZE + j] = 0;
+        }   
+    }
+}
+
 double* copy_array(const double* arr, unsigned ISIZE, unsigned JSIZE) {
     printf("[DEBUG] copy array start\n");
     double* copy_arr = (double*) calloc(ISIZE*JSIZE, sizeof(double));
@@ -101,15 +109,40 @@ int main(int argc, char* argv[]) {
 
     const char* valid_data_file_name = "valid_data.txt";
     const char* file_name = "res.txt";
+    const char* time_file_name = "time.txt";
 
     double* a = (double*) calloc(ISIZE*JSIZE, sizeof(double));
     double* b = (double*) calloc(ISIZE*JSIZE, sizeof(double));
     fill_arr(a, ISIZE, JSIZE);
 
+    #if VALIDATION
     auto seq_time = seq_impl(a, b, ISIZE, JSIZE);
     PrintArray2File(valid_data_file_name, b, ISIZE, JSIZE);
-    // auto inner_time = par_impl_inner(a, b, ISIZE, JSIZE);
-    // PrintArray2File(file_name, b, ISIZE, JSIZE);
+    
+    fill_arr(a, ISIZE, JSIZE);
+    eampty_arr(b, ISIZE, JSIZE);
+
+    auto inner_time = par_impl_inner(a, b, ISIZE, JSIZE);
+    PrintArray2File(file_name, b, ISIZE, JSIZE);
+    #endif //VALIDATION
+
+    #if TIME
+
+    #if SEQ
+    auto seq_time = seq_impl(a, b, ISIZE, JSIZE);
+    FILE* fd = fopen(time_file_name, "a");
+    fprintf(fd, "%lf ", seq_time);
+    fclose(fd);
+    #endif // SEQ
+
+    #if INNER
+    auto par_inner_time = par_impl_inner(a, b, ISIZE, JSIZE);
+    FILE* fd = fopen(time_file_name, "a");
+    fprintf(fd, "%lf ", par_inner_time);
+    fclose(fd);
+    #endif // INNER
+
+    #endif //TIME
 
     free(a);
     free(b);

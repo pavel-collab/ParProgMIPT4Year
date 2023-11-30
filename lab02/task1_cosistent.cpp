@@ -52,11 +52,16 @@ int main(int argc, char* argv[]) {
         }
     }
     auto t_end = std::chrono::high_resolution_clock::now();
+
+    #if VALIDATION
+    PrintArray2File(valid_data_file_name, arr, ISIZE, JSIZE);
+    #endif
+
+    #if TIME
     FILE* fd = fopen(time_file_name, "a");
     fprintf(fd, "%lf ", std::chrono::duration<double, std::milli>(t_end-t_start).count());
     fclose(fd);
-
-    PrintArray2File(valid_data_file_name, arr, ISIZE, JSIZE);
+    #endif
 
     free(arr);
 }
